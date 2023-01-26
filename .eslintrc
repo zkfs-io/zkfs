@@ -1,0 +1,19 @@
+{
+  "extends": ["hardcore", "hardcore/ts", "hardcore/jest"],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "root": true,
+  "parserOptions": {
+    "project": ["./tsconfig.json", "./tsconfig.test.json"]
+  },
+  "ignorePatterns": ["jest.config.js"],
+  "rules": {
+    "@typescript-eslint/quotes": [
+      "error",
+      "single",
+      {
+        "allowTemplateLiterals": true
+      }
+    ]
+  }
+}

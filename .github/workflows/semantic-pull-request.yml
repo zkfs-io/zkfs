@@ -1,0 +1,21 @@
+# this workflow validates the PR names for the `develop` branch
+name: 'Semantic pull request'
+
+on:
+  pull_request_target:
+    branches:
+      - develop
+    types:
+      - opened
+      - edited
+      - synchronize
+
+jobs:
+  main:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          # GITHUB_TOKEN was necessary for access to some PR data
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_PULL_REQUEST_TOKEN }}

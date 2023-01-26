@@ -1,0 +1,18 @@
+{
+  "name": "@zkfs/sdk",
+  "version": "0.0.0",
+  "license": "MIT",
+  "public": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "eslint ./src",
+    "test": "jest ./src",
+    "test:watch": "jest ./src --watch",
+    "prebuild": "npm run lint"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "gitHead": "f9ab85515fd9a375db41e7d21cbe55ef023ecac7"
+}

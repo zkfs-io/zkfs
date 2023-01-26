@@ -1,0 +1,83 @@
+# This workflow runs lint/test/build in parallel
+# on every pull request to develop
+name: 'Lint, test and build'
+on:
+  # run on every pull request
+  pull_request:
+    # only for the following branches
+    branches:
+      - develop
+
+jobs:
+  # Installs npm dependencies for the first time,
+  # caching them in ~/.npm
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          # This only caches ~/.npm, therefore each subsequent
+          # job needs to run `npm ci` to install deps from npm cache
+          # alternative is to cache `node_modules` directly
+          # TODO:
+          # https://www.voorhoede.nl/en/blog/super-fast-npm-install-on-github-actions/
+          # Add caching of `node_modules` to speed up this workflow
+          cache: npm
+
+      # install dependencies from the package-lock.json
+      - name: Install dependencies
+        run: npm ci
+
+  # lints all packages
+  lint:
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      # check out the repository
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: 'Install dependencies'
+        run: npm ci
+
+      - name: 'Lint'
+        run: npm run lint
+
+  # builds all packages
+  build:
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: 'Install dependencies'
+        run: npm ci
+
+      - name: 'Build'
+        run: npm run build
+
+  # tests all packages
+  test:
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: 'Install dependencies'
+        run: npm ci
+
+      - name: 'Test'
+        run: npm run test

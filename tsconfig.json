@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "strictNullChecks": true,
+    "lib": ["ESNext", "DOM"],
+    "declaration": true
+  }
+}
