@@ -37,7 +37,7 @@ When contributing, please keep the following in mind:
   - `pre-push`: validates branch names
 - Releases and changelog generation shall happen after merging from `release/*` to `develop`
   - Changelog and semver increments are generated automatically from conventional commits. All commits are included together with a merge commit, so that the changelog and semver can be deducted automatically.
-  - Releases are currently issued manually, see [this issue](https://github.com/zkfs-io/zkfs/issues/1) for automation progress.
+  - Releases happen automatically on merge to develop (@next releases)
 
 ## Local CI workflow
 
