@@ -58,6 +58,12 @@ jobs:
           actor: 'StoveLabsReleaseBot'
           token: '${{ secrets.GITHUB_TOKEN }}'
 
+      - name: 'NPM Identity'
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
+
       - name: 'Version and publish'
         env:
           # GITHUB_TOKEN was necessary for access to some PR data
