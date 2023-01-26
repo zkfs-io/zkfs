@@ -25,6 +25,7 @@ When contributing, please keep the following in mind:
 
 - Use the [`git flow`](https://danielkummer.github.io/git-flow-cheatsheet/) convention for branch names:
   - `feature/*`
+    - Feature branches shall be created only for corresponding issues and named accordingly, such as `feature/#1-development-release-workflow`
   - `develop`
   - `release/<package-name>@<version>` .e.g.: `release/@zkfs/sdk-test@0.0.1`
     - Alternatively, in case of a multi package release, feel free to use an arbitrary release name (release/\*)
