@@ -18,4 +18,4 @@ jobs:
       - uses: amannn/action-semantic-pull-request@v5
         env:
           # GITHUB_TOKEN was necessary for access to some PR data
-          GITHUB_TOKEN: ${{ secrets.SEMANTIC_PULL_REQUEST_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
