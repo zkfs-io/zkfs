@@ -44,6 +44,14 @@ jobs:
       - name: 'Build'
         run: npm run build
 
+      - uses: oleksiyrudenko/gha-git-credentials@v2.1.1
+        with:
+          global: true
+          name: 'Stove Labs release bot'
+          email: 'matej.sima@stove-labs.com'
+          actor: 'StoveLabsReleaseBot'
+          token: '${{ secrets.GH_TOKEN }}'
+
       - name: 'Version and publish'
         env:
           # GITHUB_TOKEN was necessary for access to some PR data
