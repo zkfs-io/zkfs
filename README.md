@@ -10,11 +10,11 @@
 # Quick start
 
 ```zsh
-npm i --save @zkfs/sdk
+npm i --save @zkfs/client
 ```
 
 ```typescript
-import { ZKFS } from '@zkfs/sdk';
+import { ZKFS } from '@zkfs/client';
 
 // TBD
 ```
