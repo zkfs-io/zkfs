@@ -12,6 +12,7 @@
 
 - [Quick start](#quick-start)
 - [Contributing](#contributing)
+  - [Github Project / issue tracking](#issue-tracking--github-project)
 
 # Quick start
 
@@ -44,6 +45,10 @@ When contributing, please keep the following in mind:
 - Releases and changelog generation shall happen after merging from `release/*` to `develop`
   - Changelog and semver increments are generated automatically from conventional commits. All commits are included together with a merge commit, so that the changelog and semver can be deducted automatically.
   - Releases happen automatically on merge to develop (@next releases)
+
+## Issue tracking / Github project
+
+You can keep track of the work being done across all ZKFS repositories in the [ZKFS Github project](https://github.com/orgs/zkfs-io/projects/2).
 
 ## Local CI workflow
 
