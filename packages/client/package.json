@@ -1,6 +1,6 @@
 {
-  "name": "@zkfs/sdk",
-  "version": "0.0.3",
+  "name": "@zkfs/client",
+  "version": "0.0.0",
   "license": "MIT",
   "public": true,
   "scripts": {
