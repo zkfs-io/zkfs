@@ -1,6 +1,12 @@
 # ZKFS | Zero-Knowledge File System
 
+[![License](https://badgen.net/github/license/zkfs-io/zkfs)](https://github.com/zkfs-io/zkfs/blob/develop/LICENSE.md)
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
+[![release @next packages](https://github.com/zkfs-io/zkfs/actions/workflows/release-develop.yml/badge.svg)](https://github.com/zkfs-io/zkfs/actions/workflows/release-develop.yml)
+
+### Available Packages
+
+[![@zkfs/client](https://badgen.net/npm/v/@zkfs/client/next?label=@zkfs/client@next&icon=npm)](https://www.npmjs.com/package/@zkfs/client?activeTab=readme)
 
 ### Table of contents
 
