@@ -1,6 +1,7 @@
 # This workflow runs lint/test/build in parallel
 # on every pull request to develop
-name: 'Lint, test and build'
+# It also produces test coverage comments
+name: 'Validate PRs to develop'
 on:
   # run on every pull request
   pull_request:
@@ -80,4 +81,4 @@ jobs:
         run: npm ci
 
       - name: 'Test'
-        run: npm run test
+        run: npm run test:ci

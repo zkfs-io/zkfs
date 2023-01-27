@@ -1,5 +1,5 @@
 # this workflow validates the PR names for the `develop` branch
-name: 'Release development packages as @next'
+name: 'Release @next packages'
 
 permissions:
   contents: write
