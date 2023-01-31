@@ -8,6 +8,7 @@
     "dev": "tsc -p tsconfig.json --watch",
     "lint": "eslint ./src",
     "test": "jest ./src",
+    "test:ci": "jest ./src",
     "test:watch": "jest ./src --watch",
     "prebuild": "npm run lint"
   },
