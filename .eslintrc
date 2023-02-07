@@ -6,6 +6,7 @@
   "parserOptions": {
     "project": ["./tsconfig.json", "./tsconfig.test.json"]
   },
+
   "ignorePatterns": ["jest.config.js"],
   "rules": {
     "@typescript-eslint/quotes": [
@@ -14,6 +15,19 @@
       {
         "allowTemplateLiterals": true
       }
-    ]
+    ],
+    "@typescript-eslint/parameter-properties": [
+      "error",
+      {
+        "allow": ["public"]
+      }
+    ],
+    "jest/no-hooks": [
+      "error",
+      {
+        "allow": ["beforeEach", "afterEach", "beforeAll", "afterAll"]
+      }
+    ],
+    "@typescript-eslint/consistent-indexed-object-style": "off"
   }
 }

@@ -1,6 +1,6 @@
 {
-  "name": "@zkfs/client",
-  "version": "0.0.3",
+  "name": "@zkfs/contract-api",
+  "version": "0.0.0",
   "license": "MIT",
   "public": true,
   "scripts": {
@@ -8,11 +8,17 @@
     "dev": "tsc -p tsconfig.json --watch",
     "lint": "eslint ./src",
     "test": "jest ./src",
+    "test:ci": "jest ./src",
     "test:watch": "jest ./src --watch",
     "prebuild": "npm run lint"
   },
+  "main": "dist/index.js",
   "publishConfig": {
     "access": "public"
   },
-  "gitHead": "f9ab85515fd9a375db41e7d21cbe55ef023ecac7"
+  "dependencies": {
+    "@types/lodash": "^4.14.191",
+    "@zkfs/virtual-storage": "*",
+    "snarkyjs": "^0.8.0"
+  }
 }
