@@ -13,6 +13,7 @@
 - [Quick start](#quick-start)
 - [Contributing](#contributing)
   - [Github Project / issue tracking](#issue-tracking--github-project)
+- [Examples](https://github.com/zkfs-io/zkfs/blob/develop/packages/examples/test/counterContract.test.ts#L74)
 
 # Quick start
 
