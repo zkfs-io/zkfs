@@ -2,7 +2,8 @@
   "compilerOptions": {
     "strictNullChecks": true,
     "lib": ["ESNext", "DOM"],
-    "target": "ES2016",
+    "target": "ESNext",
+    "module": "CommonJS",
     "declaration": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
