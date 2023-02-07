@@ -2,7 +2,7 @@
   "name": "@zkfs/examples",
   "version": "0.0.1",
   "license": "MIT",
-  "public": false,
+  "private": true,
   "scripts": {
     "lint": "eslint ./test",
     "test": "jest ./test",

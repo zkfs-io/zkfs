@@ -2,7 +2,7 @@
   "name": "@zkfs/contract-api",
   "version": "0.0.1",
   "license": "MIT",
-  "public": true,
+  "private": false,
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
