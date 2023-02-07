@@ -18,8 +18,10 @@
 # Quick start
 
 ```zsh
-npm i --save @zkfs/contract-api
+npm i --save @zkfs/contract-api@next
 ```
+
+> ⚠️ Make sure to install the `@next` version of the required packages
 
 ```typescript
 /* eslint-disable new-cap */
