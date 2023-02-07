@@ -1,6 +1,6 @@
 {
   "name": "@zkfs/examples",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "license": "MIT",
   "public": false,
   "scripts": {
@@ -12,7 +12,7 @@
   "main": "dist/index.js",
   "gitHead": "f9ab85515fd9a375db41e7d21cbe55ef023ecac7",
   "dependencies": {
-    "@zkfs/contract-api": "*",
+    "@zkfs/contract-api": "^0.0.1",
     "snarkyjs": "^0.8.0"
   }
 }
