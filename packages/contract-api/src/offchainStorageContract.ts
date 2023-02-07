@@ -1,6 +1,6 @@
 /* eslint-disable new-cap */
 
-import { type VirtualStorage } from '@zkfs/virtual-storage';
+import type { VirtualStorage } from '@zkfs/virtual-storage';
 import { Field, method, SmartContract, State, state } from 'snarkyjs';
 
 /**

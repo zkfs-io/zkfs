@@ -1,5 +1,5 @@
 import { type Field, Circuit, MerkleMapWitness, Poseidon } from 'snarkyjs';
-import { type FlexibleProvablePure } from 'snarkyjs/dist/node/lib/circuit_value';
+import type { FlexibleProvablePure } from 'snarkyjs/dist/node/lib/circuit_value';
 
 import type OffchainStorageContract from './offchainStorageContract';
 

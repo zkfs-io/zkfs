@@ -11,7 +11,6 @@ class CounterOffchainStorage extends Struct({
 }) {}
 
 class CounterContract extends OffchainStorageContract {
-  // combine state into a struct
   @offchainState() public counter = OffchainState.from<CounterOffchainStorage>(
     CounterOffchainStorage
   );
