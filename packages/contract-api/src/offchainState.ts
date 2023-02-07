@@ -1,28 +1,7 @@
-/* eslint-disable new-cap */
-// eslint-disable-next-line max-classes-per-file
-import {
-  Field,
-  MerkleMap,
-  Circuit,
-  MerkleMapWitness,
-  Poseidon,
-  UInt64,
-  PrivateKey,
-  PublicKey,
-  Struct,
-} from 'snarkyjs';
-import { type FlexibleProvable } from 'snarkyjs/dist/node/lib/circuit_value';
+import { type Field, Circuit, MerkleMapWitness, Poseidon } from 'snarkyjs';
+import { type FlexibleProvablePure } from 'snarkyjs/dist/node/lib/circuit_value';
 
 import type OffchainStorageContract from './offchainStorageContract';
-
-class CounterOffchainStorage extends Struct({
-  counter: UInt64,
-  user: PublicKey,
-}) {
-  public doStuff() {
-    return '';
-  }
-}
 
 // utility function to cast Readonly<Value> to Value type
 function asWritable<Value>(value: Readonly<Value>): Value {
@@ -30,11 +9,17 @@ function asWritable<Value>(value: Readonly<Value>): Value {
   return value as Value;
 }
 
+interface OffchainStateOptions {
+  shouldAssertInTree?: boolean;
+  shouldUpdateRootHash?: boolean;
+}
+
 class OffchainState<MapValue> {
   public static from<MapValue>(
-    valueType: Readonly<FlexibleProvable<MapValue>>
+    valueType: Readonly<FlexibleProvablePure<MapValue>>,
+    options?: Readonly<OffchainStateOptions>
   ) {
-    return new OffchainState(valueType);
+    return new OffchainState(valueType, options);
   }
 
   public value: MapValue;
@@ -45,16 +30,13 @@ class OffchainState<MapValue> {
 
   public key: Readonly<Field>;
 
-  public constructor(public valueType: Readonly<FlexibleProvable<MapValue>>) {}
-
-  // mock storage adapter
-  public getMap(): MerkleMap {
-    const map: MerkleMap = new MerkleMap();
-    const mockValue = 100;
-    const value = Field(mockValue);
-    map.set(Field(0), value);
-    return map;
-  }
+  public constructor(
+    public valueType: Readonly<FlexibleProvablePure<MapValue>>,
+    public options: OffchainStateOptions = {
+      shouldAssertInTree: true,
+      shouldUpdateRootHash: true,
+    }
+  ) {}
 
   /**
    * Converts the value `.toFields()` and hashes it,
@@ -71,45 +53,77 @@ class OffchainState<MapValue> {
    * Creates a set of transaction preconditions verifying
    * that the current value + key belong in the desired tree
    */
-  public assertInTree(): this {
+  public assertInTree(offchainStateRootHash: Readonly<Field>): this {
     const valueHash = this.toTreeValueHash();
     const [stateRootHashFromValue, keyFromValue] =
       this.witness.computeRootAndKey(valueHash);
 
-    // create transaction preconditions to verify belonging of received
-    // value + key combination in the desired tree
-    this.contract.offchainStateRootHash.assertEquals(stateRootHashFromValue);
+    // check if value + key combination exists in the desired tree
     this.key.assertEquals(keyFromValue);
+    offchainStateRootHash.assertEquals(stateRootHashFromValue);
 
     return this;
   }
 
   public get(): this {
-    // const testValue: MapValue = Field(0) as unknown as MapValue;
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    const testValue = new CounterOffchainStorage({
-      counter: UInt64.from(0),
-      user: PrivateKey.random().toPublicKey(),
-    }) as unknown as MapValue;
-
     // asWritable allows us to expose `valueType` as non-Readonly
-    this.value = Circuit.witness<MapValue>(
-      asWritable(this.valueType),
-      () => testValue
-    );
+    this.value = Circuit.witness<MapValue>(asWritable(this.valueType), () => {
+      const [fields] = this.contract.virtualStorage.get(
+        this.contract.address,
+        this.key
+      );
+
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      return this.valueType.fromFields(fields) as MapValue;
+    });
 
     this.witness = Circuit.witness<MerkleMapWitness>(MerkleMapWitness, () => {
-      const map = this.getMap();
-      return map.getWitness(this.key);
+      const [, witness] = this.contract.virtualStorage.get(
+        this.contract.address,
+        this.key
+      );
+
+      return witness;
     });
+
+    if (this.options.shouldAssertInTree ?? false) {
+      const offchainStateRootHash = this.contract.offchainStateRootHash.get();
+      this.contract.offchainStateRootHash.assertEquals(offchainStateRootHash);
+      this.assertInTree(offchainStateRootHash);
+    }
 
     return this;
   }
 
-  public set(): this {
-    // impl soon
+  public set(value: MapValue): this {
+    // eslint-disable-next-line max-len
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-explicit-any
+    this.contract.emitEvent(this.key.toString() as any, value);
+
+    // write the update to the virtual storage
+    const fields = this.valueType.toFields(this.value);
+    this.contract.virtualStorage.set(this.contract.address, this.key, fields);
+
+    if (this.options.shouldUpdateRootHash ?? false) {
+      const newOffchainStateRootHash = this.getRootHash();
+      this.contract.offchainStateRootHash.set(newOffchainStateRootHash);
+    }
+
     return this;
+  }
+
+  public getRootHash(): Field {
+    const rootHash = this.contract.virtualStorage.getRoot(
+      this.contract.address
+    );
+
+    if (!rootHash) {
+      throw new Error('Root hash not found');
+    }
+
+    return rootHash;
   }
 }
 
 export default OffchainState;
+export type { OffchainStateOptions };

@@ -27,6 +27,7 @@
       {
         "allow": ["beforeEach", "afterEach", "beforeAll", "afterAll"]
       }
-    ]
+    ],
+    "@typescript-eslint/consistent-indexed-object-style": "off"
   }
 }

@@ -1,8 +1,8 @@
 {
-  "name": "@zkfs/client",
-  "version": "0.0.3",
+  "name": "@zkfs/virtual-storage",
+  "version": "0.0.0",
   "license": "MIT",
-  "public": true,
+  "public": false,
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
@@ -12,8 +12,11 @@
     "test:watch": "jest ./src --watch",
     "prebuild": "npm run lint"
   },
+  "main": "dist/index.js",
   "publishConfig": {
     "access": "public"
   },
-  "gitHead": "f9ab85515fd9a375db41e7d21cbe55ef023ecac7"
+  "dependencies": {
+    "snarkyjs": "^0.8.0"
+  }
 }

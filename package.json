@@ -7,7 +7,7 @@
     "build": "npx lerna run build",
     "lint": "npx lerna run lint",
     "lint:staged": "eslint",
-    "test": "npx lerna run test",
+    "test": "npx lerna run test -- --passWithNoTests",
     "test:ci": "npx lerna run test",
     "test:watch": "npx lerna run test:watch",
     "commit": "cz",
@@ -45,5 +45,9 @@
     "*.ts": [
       "npm run lint:staged"
     ]
+  },
+  "dependencies": {
+    "@types/lodash": "^4.14.191",
+    "lodash": "^4.17.21"
   }
 }

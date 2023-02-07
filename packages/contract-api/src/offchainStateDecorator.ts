@@ -1,6 +1,8 @@
 import { Field, Poseidon } from 'snarkyjs';
 
+// eslint-disable-next-line putout/putout
 import type OffchainState from './offchainState';
+import type { OffchainStateOptions } from './offchainState';
 
 function propertyKeyToField(propertyKey: string): Field {
   /**
@@ -24,7 +26,7 @@ function propertyKeyToField(propertyKey: string): Field {
  * the underelying SmartContract, for access to on-chain state
  */
 // eslint-disable-next-line etc/no-misused-generics
-function offchainState<MapValue>() {
+function offchainState<MapValue>(options?: Readonly<OffchainStateOptions>) {
   return (target: object, propertyKey: string) => {
     // eslint-disable-next-line @typescript-eslint/init-declarations
     let value: OffchainState<MapValue> | undefined;
@@ -52,6 +54,13 @@ function offchainState<MapValue>() {
         // eslint-disable-next-line max-len
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-invalid-this
         value.contract = this;
+
+        value.contract.events = {
+          ...value.contract.events,
+          // eslint-disable-next-line max-len
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+          [String(value.key.toString())]: value.valueType as any,
+        };
       }
       return value;
     }
@@ -63,6 +72,9 @@ function offchainState<MapValue>() {
       // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
       set: (newValue: OffchainState<MapValue>) => {
         value = newValue;
+        if (options) {
+          value.options = options;
+        }
       },
     });
   };
