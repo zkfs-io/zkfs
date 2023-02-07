@@ -1,5 +1,5 @@
 /* eslint-disable new-cap */
-import { Struct, UInt64, method, Circuit } from 'snarkyjs';
+import { Struct, UInt64, method } from 'snarkyjs';
 import {
   OffchainState,
   OffchainStorageContract,
