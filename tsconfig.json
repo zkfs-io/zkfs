@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
     "strictNullChecks": true,
-    "lib": ["ESNext", "DOM"],
-    "target": "ES2016",
+    "lib": ["ESNext"],
+    "target": "ESNext",
+    "module": "ESNext",
     "declaration": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "moduleResolution": "node",
     "noImplicitAny": true,
     "allowJs": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
   }
 }

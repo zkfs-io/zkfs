@@ -3,6 +3,7 @@
   "version": "0.0.2",
   "license": "MIT",
   "private": false,
+  "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
@@ -12,13 +13,16 @@
     "test:watch": "jest ./src --watch",
     "prebuild": "npm run lint"
   },
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "publishConfig": {
     "access": "public"
   },
   "dependencies": {
     "@types/lodash": "^4.14.191",
-    "@zkfs/virtual-storage": "^0.0.1",
+    "@zkfs/virtual-storage": "^0.0.1"
+  },
+  "peerDependencies": {
     "snarkyjs": "^0.8.0"
   }
 }

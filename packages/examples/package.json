@@ -12,7 +12,9 @@
   "main": "dist/index.js",
   "gitHead": "f9ab85515fd9a375db41e7d21cbe55ef023ecac7",
   "dependencies": {
-    "@zkfs/contract-api": "^0.0.1",
+    "@zkfs/contract-api": "^0.0.1"
+  },
+  "peerDependencies": {
     "snarkyjs": "^0.8.0"
   }
 }

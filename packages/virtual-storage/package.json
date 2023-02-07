@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "license": "MIT",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
@@ -16,7 +17,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
+  "peerDependencies": {
     "snarkyjs": "^0.8.0"
   }
 }
