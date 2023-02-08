@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "license": "MIT",
   "private": true,
+  "type": "module",
   "scripts": {
     "lint": "eslint ./test",
     "test": "jest ./test",

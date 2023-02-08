@@ -11,7 +11,7 @@ import {
 } from 'snarkyjs';
 import { ContractApi, type OffchainStorageContract } from '@zkfs/contract-api';
 
-import CounterContract, { CounterOffchainStorage } from './counterContract';
+import CounterContract, { CounterOffchainStorage } from './counterContract.js';
 
 interface Sender {
   publicKey: PublicKey;

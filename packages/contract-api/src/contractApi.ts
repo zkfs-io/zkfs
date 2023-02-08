@@ -1,8 +1,8 @@
 import { Mina } from 'snarkyjs';
 import { VirtualStorage } from '@zkfs/virtual-storage';
-import cloneDeep from 'lodash/cloneDeep';
+import cloneDeep from 'lodash/cloneDeep.js';
 
-import type OffchainStorageContract from './offchainStorageContract';
+import type OffchainStorageContract from './offchainStorageContract.js';
 
 // eslint-disable-next-line etc/no-deprecated
 type Transaction = Awaited<ReturnType<typeof Mina.transaction>>;

@@ -1,7 +1,9 @@
 import { type Field, Circuit, MerkleMapWitness, Poseidon } from 'snarkyjs';
-import type { FlexibleProvablePure } from 'snarkyjs/dist/node/lib/circuit_value';
 
-import type OffchainStorageContract from './offchainStorageContract';
+// eslint-disable-next-line import/no-relative-packages
+import type { FlexibleProvablePure } from '../../../node_modules/snarkyjs/dist/node/lib/circuit_value.js';
+
+import type OffchainStorageContract from './offchainStorageContract.js';
 
 // utility function to cast Readonly<Value> to Value type
 function asWritable<Value>(value: Readonly<Value>): Value {

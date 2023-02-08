@@ -28,6 +28,8 @@
         "allow": ["beforeEach", "afterEach", "beforeAll", "afterAll"]
       }
     ],
-    "@typescript-eslint/consistent-indexed-object-style": "off"
+    "@typescript-eslint/consistent-indexed-object-style": "off",
+    "import/no-extraneous-dependencies": ["error", {"peerDependencies": true}]
+
   }
 }
