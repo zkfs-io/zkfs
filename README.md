@@ -22,7 +22,7 @@
 npm i --save @zkfs/contract-api@next
 ```
 
-> ⚠️ Make sure to install the `@next` version of the required packages
+> ⚠️ ZKFS is currently being shipped as a development preview, containing a limited subset of features. As of now, you can use ZKFS in your test suite using @zkfs/contract-api@next. Next step is to ship a UI development kit, with a fully fledged ZKFS node/peer.
 
 ```typescript
 import { method, UInt64 } from 'snarkyjs';
@@ -47,6 +47,8 @@ export class Counter extends OffchainStorageContract {
   }
 }
 ```
+
+> Check out [Examples](https://github.com/zkfs-io/zkfs/blob/develop/packages/examples/test/counterContract.test.ts#L74) or the [Stackblitz demo](https://stackblitz.com/edit/zkfs-counter?file=src/Counter.ts) to learn how to integrate off-chain storage to tests.
 
 # Contributing
 
