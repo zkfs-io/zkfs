@@ -14,6 +14,7 @@
 - [Contributing](#contributing)
   - [Github Project / issue tracking](#issue-tracking--github-project)
 - [Examples](https://github.com/zkfs-io/zkfs/blob/develop/packages/examples/test/counterContract.test.ts#L74)
+- [Stackblitz demo](https://stackblitz.com/edit/zkfs-counter?file=src/Counter.ts)
 
 # Quick start
 
@@ -24,33 +25,25 @@ npm i --save @zkfs/contract-api@next
 > ⚠️ Make sure to install the `@next` version of the required packages
 
 ```typescript
-/* eslint-disable new-cap */
-import { Struct, UInt64, method } from 'snarkyjs';
+import { method, UInt64 } from 'snarkyjs';
 import {
   OffchainState,
-  OffchainStorageContract,
   offchainState,
+  OffchainStorageContract,
 } from '@zkfs/contract-api';
 
-class CounterOffchainStorage extends Struct({
-  value: UInt64,
-}) {}
+export class Counter extends OffchainStorageContract {
+  @offchainState() count = OffchainState.from<UInt64>(UInt64);
 
-class CounterContract extends OffchainStorageContract {
-  @offchainState() public counter = OffchainState.from<CounterOffchainStorage>(
-    CounterOffchainStorage
-  );
+  init() {
+    super.init();
+    this.count.set(UInt64.from(0));
+  }
 
-  @method
-  public increment() {
-    // retrieve the offchain state value
-    const { value: counter } = this.counter.get();
-
-    // update the counter
-    counter.value = counter.value.add(1);
-
-    // set a new offchain state value
-    this.counter.set(counter);
+  @method update() {
+    const { value: currentNum } = this.count.get();
+    const newNum = currentNum.add(1);
+    this.count.set(newNum);
   }
 }
 ```
