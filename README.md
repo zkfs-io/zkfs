@@ -6,7 +6,7 @@
 
 ### Available Packages
 
-[![@zkfs/client](https://badgen.net/npm/v/@zkfs/client/next?label=@zkfs/client@next&icon=npm)](https://www.npmjs.com/package/@zkfs/client?activeTab=readme)
+[![@zkfs/contract-api](https://badgen.net/npm/v/@zkfs/client/next?label=@zkfs/client@next&icon=npm)](https://www.npmjs.com/package/@zkfs/contract-api?activeTab=readme)
 
 ### Table of contents
 
