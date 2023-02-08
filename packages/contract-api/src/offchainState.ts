@@ -105,6 +105,7 @@ class OffchainState<MapValue> {
     // write the update to the virtual storage
     const fields = this.valueType.toFields(this.value);
     this.contract.virtualStorage.set(this.contract.address, this.key, fields);
+    this.value = value;
 
     if (this.options.shouldUpdateRootHash ?? false) {
       const newOffchainStateRootHash = this.getRootHash();
