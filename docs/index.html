@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZKFS | Zero-Knowledge File System</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <style>
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        padding: 0;
+        margin: 0;
+        font-family: 'Roboto', sans-serif;
+      }
+
+      body {
+        /* color: rgb(21,24,30); */
+        color: rgb(241, 241, 241);
+        background: rgb(21, 24, 30);
+        /* background: rgb(251, 251, 251); */
+      }
+      .container {
+        height: 100%;
+        width: 80%;
+
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding-bottom: 72px;
+      }
+
+      .intro {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        gap: 72px;
+        align-items: start;
+        padding-top: 48px;
+        padding-bottom: 72px;
+      }
+
+      .logo {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 200px;
+      }
+
+      .logo h1 {
+        font-size: 80px;
+        margin: 0;
+        padding: 0;
+        line-height: 80px;
+      }
+
+      .logo span {
+        margin: 0;
+        padding: 0;
+        background: rgba(250, 104, 189, 0.9);
+        letter-spacing: 1px;
+        font-weight: 600;
+        color: rgb(21, 24, 30);
+        /* color: rgba(250, 104, 189, 0.5); */
+        padding: 3px 6px;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 1px;
+        font-weight: 600;
+        margin-top: 1px;
+        width: 192px;
+        text-align: center;
+      }
+
+      .preview {
+        width: 100%;
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        padding-bottom: 72px;
+      }
+
+      .preview iframe {
+        width: 100%;
+        min-height: 755px;
+        max-height: 755px;
+        height: 100%;
+        border-radius: 8px;
+        box-shadow: 0px 0px 12px 0px rgba(60, 60, 60, 0.1);
+      }
+
+      .right {
+        display: flex;
+        flex-direction: column;
+        align-items: end;
+      }
+
+      .explainer p {
+        /* flex: 1; */
+        margin: 0;
+        padding: 0;
+        padding-top: 6px;
+        font-weight: 400;
+        margin-top: 8px;
+        color: rgba(255, 255, 255, 0.9);
+        letter-spacing: 0.4px;
+        max-width: 700px;
+        font-size: 16px;
+        line-height: 22px;
+        text-align: right;
+      }
+
+      .actions {
+        display: flex;
+        gap: 32px;
+      }
+
+      .actions a {
+        text-decoration: none;
+        padding: 16px 20px;
+        outline: none;
+        /* background: rgb(33, 34, 39); */
+        background: transparent;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        text-transform: uppercase;
+        font-weight: 400;
+        letter-spacing: 0.1px;
+        box-shadow: none;
+        letter-spacing: 1px;
+        font-weight: 600;
+        border-radius: 4px;
+        display: inline-block;
+      }
+
+      .actions a.primary,
+      .actions a.primary:visited,
+      .actions a.primary:active,
+      .actions a.primary:focus {
+        background: rgba(90, 247, 143, 0.9);
+        border: 1px solid rgba(90, 247, 143, 0.9);
+        color: rgb(21, 24, 30);
+      }
+
+      .actions a.secondary {
+        color: rgba(255, 255, 255, 0.9);
+        border: 1px solid #fff;
+      }
+
+      .right {
+        width: 100%;
+      }
+
+      .menu {
+        display: flex;
+        width: 100%;
+        justify-content: right;
+        gap: 8px;
+      }
+
+      .menu a:not(.github-button) {
+        color: rgba(255, 255, 255, 0.9);
+        font-weight: 500;
+        text-decoration: none;
+        font-size: 14px;
+        text-transform: uppercase;
+        font-weight: bold;
+        letter-spacing: 0.6px;
+        line-height: 14px;
+        height: 18px;
+        border-bottom: 0.5px solid rgba(255, 255, 255, 0.8);
+      }
+
+      .menu > span {
+        margin-left: 16px;
+        margin-top: -2px;
+      }
+
+      .twitter-follow-button {
+        margin-top: -2px;
+        margin-left: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="intro">
+        <div class="logo">
+          <h1>ZKFS</h1>
+          <span>Early technical preview</span>
+        </div>
+        <div class="right">
+          <div class="menu">
+            <a href="https://github.com/zkfs-io/zkfs#readme" target="_blank"
+              >Documentation</a
+            >
+            <a
+              href="https://github.com/zkfs-io/zkfs/tree/develop/packages/examples/test"
+              target="_blank"
+              >Examples</a
+            >
+            <a
+              class="github-button"
+              href="https://github.com/zkfs-io/zkfs"
+              data-color-scheme="no-preference: light; light: light; dark: light;"
+              data-icon="octicon-star"
+              data-show-count="true"
+              aria-label="Star zkfs-io/zkfs on GitHub"
+              >Star</a
+            >
+            <a
+              href="https://twitter.com/zkfs_io?ref_src=twsrc%5Etfw"
+              class="twitter-follow-button"
+              data-show-count="false"
+              >Follow @zkfs_io</a
+            >
+            <script
+              async
+              src="https://platform.twitter.com/widgets.js"
+              charset="utf-8"
+            ></script>
+          </div>
+          <div class="explainer">
+            <p>
+              ZKFS <i>(Zero-Knowledge File System)</i> is a file system protocol
+              for the zero-knowledge world. Based on snarkyjs, it supports the
+              Mina blockchain as a first-class citizen.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="preview">
+        <iframe
+          src="https://stackblitz.com/edit/zkfs-counter?embed=1&file=src/Counter.test.ts,src/Counter.ts&hideExplorer=1&hideNavigation=1&theme=dark&view=editor"
+          frameborder="0"
+        ></iframe>
+      </div>
+      <div class="actions">
+        <a
+          href="https://github.com/zkfs-io/zkfs#readme"
+          target="_blank"
+          class="primary"
+          >DOCUMENTATION</a
+        >
+        <a
+          href="https://github.com/zkfs-io/zkfs/tree/develop/packages/examples/test"
+          target="_blank"
+          class="secondary"
+          >EXAMPLES</a
+        >
+      </div>
+    </div>
+  </body>
+</html>
