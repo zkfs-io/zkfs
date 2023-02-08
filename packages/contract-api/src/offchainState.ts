@@ -103,7 +103,7 @@ class OffchainState<MapValue> {
     this.contract.emitEvent(this.key.toString() as any, value);
 
     // write the update to the virtual storage
-    const fields = this.valueType.toFields(this.value);
+    const fields = this.valueType.toFields(value);
     this.contract.virtualStorage.set(this.contract.address, this.key, fields);
     this.value = value;
 
