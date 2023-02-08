@@ -6,14 +6,17 @@
   "type": "module",
   "scripts": {
     "lint": "eslint ./test",
-    "test": "jest ./test",
-    "test:ci": "jest ./test",
-    "test:watch": "jest ./test --watch"
+    "test": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./test",
+    "test:ci": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./test",
+    "test:watch": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./test --watch"
   },
   "main": "dist/index.js",
   "gitHead": "f9ab85515fd9a375db41e7d21cbe55ef023ecac7",
   "dependencies": {
     "@zkfs/contract-api": "*",
     "snarkyjs": "^0.8.0"
+  },
+  "devDependencies": {
+    "jest": "^29.4.2"
   }
 }
