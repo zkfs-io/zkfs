@@ -1,6 +1,6 @@
 {
   "name": "@zkfs/contract-api",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "license": "MIT",
   "private": false,
   "type": "module",
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@types/lodash": "^4.14.191",
-    "@zkfs/virtual-storage": "^0.0.3",
+    "@zkfs/virtual-storage": "^0.0.4",
     "snarkyjs": "^0.8.0"
   },
   "devDependencies": {
