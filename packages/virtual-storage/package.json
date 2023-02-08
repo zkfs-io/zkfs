@@ -10,8 +10,7 @@
     "lint": "eslint ./src",
     "test": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./src",
     "test:ci": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./src",
-    "test:watch": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./src --watch",
-    "prebuild": "npm run lint"
+    "test:watch": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./src --watch"
   },
   "main": "dist/index.js",
   "publishConfig": {
@@ -19,5 +18,8 @@
   },
   "dependencies": {
     "snarkyjs": "^0.8.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.33.0"
   }
 }
