@@ -1,9 +1,9 @@
 import { Field, Poseidon } from 'snarkyjs';
 
 // eslint-disable-next-line putout/putout
-import type OffchainState from './offchainState';
+import type OffchainState from './offchainState.js';
 // eslint-disable-next-line no-duplicate-imports
-import type { OffchainStateOptions } from './offchainState';
+import type { OffchainStateOptions } from './offchainState.js';
 
 function propertyKeyToField(propertyKey: string): Field {
   /**
