@@ -1,6 +1,6 @@
 {
   "name": "@zkfs/virtual-storage",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "license": "MIT",
   "public": true,
   "type": "module",
