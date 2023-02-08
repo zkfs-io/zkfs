@@ -1,8 +1,4 @@
-/* eslint-disable no-undef */
-/* eslint-disable import/unambiguous */
-/* eslint-disable import/no-commonjs */
 /** @type {import('ts-jest').JestConfigWithTsJest} */
-
 module.exports = {
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
