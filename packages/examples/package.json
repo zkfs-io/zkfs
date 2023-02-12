@@ -17,7 +17,6 @@
     "snarkyjs": "^0.8.0"
   },
   "devDependencies": {
-    "eslint": "^8.33.0",
-    "jest": "^29.4.2"
+    "eslint": "^8.33.0"
   }
 }
