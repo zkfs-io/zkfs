@@ -2,11 +2,11 @@
 
 [![License](https://badgen.net/github/license/zkfs-io/zkfs)](https://github.com/zkfs-io/zkfs/blob/develop/LICENSE.md)
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
-[![release @next packages](https://github.com/zkfs-io/zkfs/actions/workflows/release-develop.yml/badge.svg)](https://github.com/zkfs-io/zkfs/actions/workflows/release-develop.yml)
+[![release @alpha packages](https://github.com/zkfs-io/zkfs/actions/workflows/release-develop.yml/badge.svg)](https://github.com/zkfs-io/zkfs/actions/workflows/release-develop.yml)
 
 ### Available Packages
 
-[![@zkfs/contract-api](https://badgen.net/npm/v/@zkfs/contract-api/next?label=@zkfs/contract-api@next&icon=npm)](https://www.npmjs.com/package/@zkfs/contract-api?activeTab=readme)
+[![@zkfs/contract-api@alpha](https://badgen.net/npm/v/@zkfs/contract-api/alpha?label=@zkfs/contract-api@alpha&icon=npm)](https://www.npmjs.com/package/@zkfs/contract-api?activeTab=readme)
 
 ### Table of contents
 
@@ -19,10 +19,10 @@
 # Quick start
 
 ```zsh
-npm i --save @zkfs/contract-api@next
+npm i --save @zkfs/contract-api@alpha
 ```
 
-> ⚠️ ZKFS is currently being shipped as a development preview, containing a limited subset of features. As of now, you can use ZKFS in your test suite using @zkfs/contract-api@next. Next step is to ship a UI development kit, with a fully fledged ZKFS node/peer.
+> ⚠️ ZKFS is currently being shipped as a development preview, containing a limited subset of features. As of now, you can use ZKFS in your test suite using @zkfs/contract-api@alpha. Next step is to ship a UI development kit, with a fully fledged ZKFS node/peer.
 
 ```typescript
 import { method, UInt64 } from 'snarkyjs';
@@ -68,7 +68,7 @@ When contributing, please keep the following in mind:
   - `pre-push`: validates branch names
 - Releases and changelog generation shall happen after merging from `release/*` to `develop`
   - Changelog and semver increments are generated automatically from conventional commits. All commits are included together with a merge commit, so that the changelog and semver can be deducted automatically.
-  - Releases happen automatically on merge to develop (@next releases)
+  - Releases happen automatically on merge to develop (@alpha releases)
 
 ## Issue tracking / Github project
 
