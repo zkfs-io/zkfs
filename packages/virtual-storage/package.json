@@ -2,7 +2,7 @@
   "name": "@zkfs/virtual-storage",
   "version": "0.0.8",
   "license": "MIT",
-  "public": true,
+  "private": true,
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
