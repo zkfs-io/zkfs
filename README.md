@@ -4,17 +4,12 @@
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
 [![release @latest packages](https://github.com/zkfs-io/zkfs/actions/workflows/release-develop.yml/badge.svg)](https://github.com/zkfs-io/zkfs/actions/workflows/release-develop.yml)
 
-### Available Packages
-
-[![@zkfs/contract-api@latest](https://badgen.net/npm/v/@zkfs/contract-api/latest?label=@zkfs/contract-api@latest&icon=npm)](https://www.npmjs.com/package/@zkfs/contract-api?activeTab=readme)
-
 ### Table of contents
 
 - [Quick start](#quick-start)
 - [Contributing](#contributing)
   - [Github Project / issue tracking](#issue-tracking--github-project)
-- [Examples](https://github.com/zkfs-io/zkfs/blob/develop/packages/examples/test/counterContract.test.ts#L74)
-- [Stackblitz demo](https://stackblitz.com/edit/zkfs-counter?file=src/Counter.ts)
+- [Examples](https://github.com/zkfs-io/zkfs/blob/develop/packages/examples/test/counter.test.ts#67)
 
 # Quick start
 
@@ -32,23 +27,26 @@ import {
   OffchainStorageContract,
 } from '@zkfs/contract-api';
 
-export class Counter extends OffchainStorageContract {
-  @offchainState() count = OffchainState.from<UInt64>(UInt64);
+class Counter extends OffchainStorageContract {
+  @offchainState() public count = OffchainState.from<UInt64>(UInt64);
 
-  init() {
+  public init() {
     super.init();
     this.count.set(UInt64.from(0));
   }
 
-  @method update() {
-    const { value: currentNum } = this.count.get();
-    const newNum = currentNum.add(1);
-    this.count.set(newNum);
+  @method
+  public update() {
+    const { value: currentCount } = this.count.get();
+    const newCount = currentCount.add(1);
+    this.count.set(newCount);
   }
 }
+
+export default Counter;
 ```
 
-> Check out [Examples](https://github.com/zkfs-io/zkfs/blob/develop/packages/examples/test/counterContract.test.ts#L74) or the [Stackblitz demo](https://stackblitz.com/edit/zkfs-counter?file=src/Counter.ts) to learn how to integrate off-chain storage to tests.
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/zkfs-io/zkfs?embed=1&file=packages/examples/test/counter.test.ts,packages/examples/test/counter.ts&hideExplorer=0&hideNavigation=0&theme=dark&view=editor)
 
 # Contributing
 
