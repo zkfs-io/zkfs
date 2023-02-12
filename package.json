@@ -8,7 +8,6 @@
     "build": "npx lerna run build",
     "lint": "npx lerna run lint",
     "lint:staged": "eslint",
-    "test:stackblitz": "npx lerna run build && npx lerna run test:watch --scope=@zkfs/examples -- -- --passWithNoTests",
     "test": "npx lerna run test -- --passWithNoTests",
     "test:ci": "npx lerna run test -- --passWithNoTests --forceExit",
     "test:watch": "npx lerna run test:watch",
@@ -51,5 +50,8 @@
   "dependencies": {
     "@types/lodash": "^4.14.191",
     "lodash": "^4.17.21"
+  },
+  "stackblitz": {
+    "startCommand": "npm run build && npx lerna run test:watch --scope=@zkfs/examples"
   }
 }
