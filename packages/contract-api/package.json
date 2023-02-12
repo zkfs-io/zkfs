@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@types/lodash": "^4.14.191",
-    "@zkfs/virtual-storage": "^0.0.8",
+    "@zkfs/virtual-storage": "*",
     "snarkyjs": "^0.8.0"
   },
   "devDependencies": {
