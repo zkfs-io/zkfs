@@ -2,7 +2,7 @@
 name: 'Release @next packages'
 
 concurrency:
-  group: "Release develop"
+  group: 'Release develop'
   cancel-in-progress: true
 
 permissions:
@@ -74,4 +74,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm run publish -- --canary --preid alpha --dist-tag alpha --pre-dist-tag alpha --loglevel verbose
+        run: npm run publish:canary
