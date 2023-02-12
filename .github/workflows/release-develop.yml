@@ -1,5 +1,5 @@
 # this workflow validates the PR names for the `develop` branch
-name: 'Release @next packages'
+name: 'Release @alpha packages'
 
 concurrency:
   group: 'Release develop'
