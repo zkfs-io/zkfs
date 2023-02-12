@@ -13,7 +13,7 @@
   "main": "dist/index.js",
   "gitHead": "f9ab85515fd9a375db41e7d21cbe55ef023ecac7",
   "dependencies": {
-    "@zkfs/contract-api": "*",
+    "@zkfs/contract-api": "file:./../contract-api",
     "snarkyjs": "^0.8.0"
   },
   "devDependencies": {
