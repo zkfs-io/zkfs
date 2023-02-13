@@ -1,58 +1,23 @@
+/* eslint-disable jest/consistent-test-it */
 /* eslint-disable no-console */
-/* eslint-disable @typescript-eslint/init-declarations */
-/* eslint-disable one-var */
-/* eslint-disable putout/putout */
-import {
-  isReady,
-  Mina,
-  PrivateKey,
-  type PublicKey,
-  AccountUpdate,
-  UInt64,
-} from 'snarkyjs';
-import { ContractApi } from '@zkfs/contract-api';
+/* eslint-disable jest/require-top-level-describe */
+
+import { AccountUpdate, UInt64 } from 'snarkyjs';
 
 import Counter from './counter.js';
+import describeContract from './describeContract.js';
 
-const hasProofsEnabled = false;
-
-describe('counter', () => {
-  let deployerAccount: PublicKey,
-    deployerKey: PrivateKey,
-    senderAccount: PublicKey,
-    senderKey: PrivateKey,
-    zkAppAddress: PublicKey,
-    zkAppPrivateKey: PrivateKey,
-    zkApp: Counter,
-    contractApi: ContractApi;
-
-  beforeAll(async () => {
-    await isReady;
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (hasProofsEnabled) {
-      await Counter.compile();
-    }
-  });
-
-  beforeEach(() => {
-    // eslint-disable-next-line @typescript-eslint/naming-convention, new-cap
-    const Local = Mina.LocalBlockchain({ proofsEnabled: hasProofsEnabled });
-    Mina.setActiveInstance(Local);
-
-    // first test account is the deployer
-    [{ privateKey: deployerKey, publicKey: deployerAccount }] =
-      Local.testAccounts;
-
-    // second test account is the sender
-    [, { privateKey: senderKey, publicKey: senderAccount }] =
-      Local.testAccounts;
-    zkAppPrivateKey = PrivateKey.random();
-    zkAppAddress = zkAppPrivateKey.toPublicKey();
-    zkApp = new Counter(zkAppAddress);
-    contractApi = new ContractApi();
-  });
-
+// eslint-disable-next-line jest/require-hook
+describeContract<Counter>('counter', Counter, (context) => {
   async function localDeploy() {
+    const {
+      deployerAccount,
+      deployerKey,
+      zkAppPrivateKey,
+      zkApp,
+      contractApi,
+    } = context();
+
     const tx = await contractApi.transaction(zkApp, deployerAccount, () => {
       AccountUpdate.fundNewAccount(deployerAccount);
       zkApp.deploy();
@@ -66,6 +31,8 @@ describe('counter', () => {
 
   it('correctly updates the count state on the `Counter` smart contract', async () => {
     expect.assertions(1);
+
+    const { senderAccount, senderKey, zkApp, contractApi } = context();
 
     await localDeploy();
 
