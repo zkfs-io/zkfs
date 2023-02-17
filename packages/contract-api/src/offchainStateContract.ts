@@ -6,7 +6,7 @@ import { Field, method, SmartContract, State, state } from 'snarkyjs';
 /**
  * Class with utilities for offchain storage usage
  */
-class OffchainStorageContract extends SmartContract {
+class OffchainStateContract extends SmartContract {
   /**
    * Merkle root hash of the offchain storage state
    */
@@ -25,7 +25,7 @@ class OffchainStorageContract extends SmartContract {
     // eslint-disable-next-line max-len
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-unsafe-member-access
     const thisConstructor = Object.getPrototypeOf(this)
-      .constructor as OffchainStorageContract;
+      .constructor as OffchainStateContract;
 
     const offchainStateKeys: string[] =
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
@@ -46,4 +46,4 @@ class OffchainStorageContract extends SmartContract {
   }
 }
 
-export default OffchainStorageContract;
+export default OffchainStateContract;

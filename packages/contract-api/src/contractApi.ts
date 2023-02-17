@@ -2,19 +2,17 @@ import { Mina } from 'snarkyjs';
 import { VirtualStorage } from '@zkfs/virtual-storage';
 import cloneDeep from 'lodash/cloneDeep.js';
 
-import type OffchainStorageContract from './offchainStorageContract.js';
+import type OffchainStateContract from './offchainStateContract.js';
 
 // eslint-disable-next-line etc/no-deprecated
 type Transaction = Awaited<ReturnType<typeof Mina.transaction>>;
-
-// function parseEvents(contract: PartialOffchainStorageContract, events:)
 
 class ContractApi {
   public virtualStorage = new VirtualStorage();
 
   // eslint-disable-next-line max-len
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types, @typescript-eslint/require-await
-  public async fetchOffchainState(contract: OffchainStorageContract) {
+  public async fetchOffchainState(contract: OffchainStateContract) {
     // eslint-disable-next-line no-param-reassign
     contract.virtualStorage = this.virtualStorage;
   }
@@ -22,7 +20,7 @@ class ContractApi {
   public async transaction(
     // eslint-disable-next-line max-len
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
-    contract: OffchainStorageContract,
+    contract: OffchainStateContract,
     // eslint-disable-next-line max-len
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     sender: Mina.FeePayerSpec,
