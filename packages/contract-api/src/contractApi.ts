@@ -4,6 +4,8 @@ import cloneDeep from 'lodash/cloneDeep.js';
 
 import type OffchainStateContract from './offchainStateContract.js';
 
+// testing version bump
+
 // eslint-disable-next-line etc/no-deprecated
 type Transaction = Awaited<ReturnType<typeof Mina.transaction>>;
 
