@@ -3,7 +3,7 @@ import { type Field, Circuit, MerkleMapWitness, Poseidon } from 'snarkyjs';
 // eslint-disable-next-line import/no-relative-packages
 import type { FlexibleProvablePure } from '../../../node_modules/snarkyjs/dist/node/lib/circuit_value.js';
 
-import type OffchainStorageContract from './offchainStorageContract.js';
+import type OffchainStateContract from './offchainStateContract.js';
 
 // utility function to cast Readonly<Value> to Value type
 function asWritable<Value>(value: Readonly<Value>): Value {
@@ -41,7 +41,7 @@ class OffchainState<MapValue> {
   public witness: MerkleMapWitness;
 
   // reference to the underlying contract, provides access to virtual storage
-  public contract: OffchainStorageContract;
+  public contract: OffchainStateContract;
 
   // key in the merkle map, that this state belongs to
   public key: Readonly<Field>;

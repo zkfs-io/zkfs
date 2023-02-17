@@ -2,10 +2,10 @@ import { method, UInt64 } from 'snarkyjs';
 import {
   OffchainState,
   offchainState,
-  OffchainStorageContract,
+  OffchainStateContract,
 } from '@zkfs/contract-api';
 
-class Counter extends OffchainStorageContract {
+class Counter extends OffchainStateContract {
   @offchainState() public count = OffchainState.from<UInt64>(UInt64);
 
   public init() {
