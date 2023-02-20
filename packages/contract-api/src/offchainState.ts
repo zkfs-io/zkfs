@@ -1,5 +1,7 @@
 import { type Field, Circuit, MerkleMapWitness, Poseidon } from 'snarkyjs';
 
+// bump version
+
 // eslint-disable-next-line import/no-relative-packages
 import type { FlexibleProvablePure } from '../../../node_modules/snarkyjs/dist/node/lib/circuit_value.js';
 
