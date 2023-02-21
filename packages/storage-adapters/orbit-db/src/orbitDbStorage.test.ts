@@ -35,7 +35,7 @@ describe('orbitDbStorage', () => {
     if (quickTesting) tearDownIpfs();
   });
 
-  it('can instantiate an OrbitDbStorage class', async () => {
+  it('can instantiate an OrbitDbStorage class', () => {
     expect.assertions(1);
 
     const storageAdapter = new OrbitDbStorage({
@@ -52,7 +52,7 @@ describe('orbitDbStorage', () => {
       async () => {
         expect.assertions(2);
 
-        const ipfsForStorageAdapter = await create(
+        const ipfs = await create(
           createIpfsConfigConnectingToPeers(
             'ipfs-storage-adapter-01',
             peersConfig.addresses
@@ -60,10 +60,11 @@ describe('orbitDbStorage', () => {
         );
         const storageAdapter = new OrbitDbStorage({
           peersConfig,
-          ipfs: ipfsForStorageAdapter,
+          ipfs,
         });
 
-        await storageAdapter.resolveWhenConnectedToPeers();
+        await storageAdapter.initialize();
+        await storageAdapter.isReady();
 
         const connectedPeers = await storageAdapter.ipfsNode.swarm.peers();
         expect(connectedPeers.length).toBeGreaterThan(0);
@@ -81,49 +82,34 @@ describe('orbitDbStorage', () => {
       async () => {
         expect.assertions(1);
 
-        const ipfsForStorageAdapter = await create(
+        const ipfs = await create(
           createIpfsConfigOffline('ipfs-storage-adapter-02')
         );
 
         const storageAdapter = new OrbitDbStorage({
-          ipfs: ipfsForStorageAdapter,
+          ipfs,
           peersConfig,
         });
-        await storageAdapter.isReady();
+        await storageAdapter.initialize();
 
         expect(storageAdapter.orbitDb).toBeInstanceOf(OrbitDB);
       },
       extendedJestTimeout
     );
 
-    it('fails to instantiate OrbitDb if isReady is not awaited', async () => {
+    it('fails to instantiate OrbitDb if initialize() is not awaited', async () => {
       expect.assertions(1);
 
-      const ipfsForStorageAdapter = await create(
+      const ipfs = await create(
         createIpfsConfigOffline('ipfs-storage-adapter-03')
       );
 
       const storageAdapter = new OrbitDbStorage({
-        ipfs: ipfsForStorageAdapter,
+        ipfs,
         peersConfig,
       });
 
       expect(storageAdapter.orbitDb).toBeUndefined();
-    });
-  });
-
-  describe.skip('setting values in orbit-db', () => {
-    it('can set a map in orbit-db', async () => {
-      const ipfsForStorageAdapter = await create(
-        createIpfsConfigOffline('ipfs-storage-adapter-04')
-      );
-
-      const storageAdapter = new OrbitDbStorage({
-        ipfs: ipfsForStorageAdapter,
-        peersConfig,
-      });
-
-      const cid = await storageAdapter.setMap('account-address', 'map');
     });
   });
 });

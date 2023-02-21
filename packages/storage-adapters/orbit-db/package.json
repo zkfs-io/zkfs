@@ -25,6 +25,7 @@
     "lodash": "^4.17.21"
   },
   "dependencies": {
+    "@multiformats/multiaddr": "^11.4.0",
     "ipfs-core": "^0.18.0",
     "orbit-db": "^0.29.0"
   }

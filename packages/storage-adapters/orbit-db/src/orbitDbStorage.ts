@@ -1,8 +1,9 @@
 /* eslint-disable no-warning-comments */
 /* eslint-disable unicorn/prevent-abbreviations */
+import { multiaddr } from '@multiformats/multiaddr';
 import type { IPFS } from 'ipfs-core';
 import _ from 'lodash';
-import OrbitDB from 'orbit-db';
+import OrbitDB, { OrbitDBAddress } from 'orbit-db';
 
 import type { StorageAdapter, PeersConfig } from './interface.js';
 
@@ -18,20 +19,27 @@ class OrbitDbStorage implements StorageAdapter {
     this.peersConfig = options.peersConfig;
   }
 
-  public async isConnected(): Promise<boolean> {
-    try {
-      await this.resolveWhenConnectedToPeers();
-      return true;
-    } catch (error) {
-      return false;
-    }
+  /**
+   * Initializes the OrbitDb within the storage adapter.
+   */
+  public async initialize(): Promise<void> {
+    this.orbitDb = await OrbitDB.createInstance(this.ipfsNode);
   }
 
   /**
    * A promise that resolves when the provided IPFS instance is connected to all
-   * pre-configured peers.
+   * bootstrap peers.
    */
-  public async resolveWhenConnectedToPeers(): Promise<void> {
+  public async isReady(): Promise<void> {
+    const bootstrapConfig =
+      ((await this.ipfsNode.config.get('Bootstrap')) as string[] | undefined) ??
+      [];
+
+    const bootstrapList = bootstrapConfig.map((item) =>
+      multiaddr(item).getPeerId()
+    );
+
+    //const bootstrapList = ipfsConfig.config.Bootstrap;
     // eslint-disable-next-line promise/avoid-new
     await new Promise<void>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
@@ -44,7 +52,7 @@ class OrbitDbStorage implements StorageAdapter {
         const connectedPeers = peersList.map(({ peer }) => peer.toString());
 
         const isConnectedToConfiguredPeers =
-          _.difference(this.peersConfig.addresses, connectedPeers).length === 0;
+          _.difference(bootstrapList, connectedPeers).length === 0;
 
         if (isConnectedToConfiguredPeers) {
           clearTimeout(timeoutId);
@@ -57,14 +65,6 @@ class OrbitDbStorage implements StorageAdapter {
     });
   }
 
-  /**
-   * A promise that resolves when the storage adapter is ready to be used.
-   */
-  public async isReady(): Promise<void> {
-    await this.resolveWhenConnectedToPeers();
-    this.orbitDb = await OrbitDB.createInstance(this.ipfsNode);
-  }
-
   public getMap(account: string): Promise<string> {
     throw new Error('Method not implemented.');
   }
@@ -74,12 +74,23 @@ class OrbitDbStorage implements StorageAdapter {
   ): Promise<{ [x: string]: string[] }> {
     throw new Error('Method not implemented.');
   }
-  public registerAccount(account: string): Promise<void> {
-    throw new Error('Method not implemented.');
+
+  public async registerAccount(account: string): Promise<void> {
+    const dbAddress = await this.getRegisterAccountOrbitDbAddress();
+    const keyValueStore = await this.orbitDb.keyvalue(dbAddress.toString());
+
+    // TODO: api change for value
+    await keyValueStore.set(account, 'placeholder');
   }
+
+  public async getRegisterAccountOrbitDbAddress(): Promise<OrbitDBAddress> {
+    return await this.orbitDb.determineAddress('zkfs.addresses', 'keyvalue');
+  }
+
   public setMap(account: string, map: string): Promise<void> {
     throw new Error('Method not implemented.');
   }
+
   public setValue(
     account: string,
     value: { [x: string]: string[] }
