@@ -11,55 +11,38 @@ import {
 } from '../test/configs.js';
 
 import OrbitDbStorage from './orbitDbStorage.js';
-import type { PeersConfig } from './interface.js';
+import type { OrbitDbStorageConfig } from './interface.js';
 
 const extendedJestTimeout = 20_000;
 
-// set false for CI testing
-const quickTesting = false;
-
 describe('orbitDbStorage', () => {
-  const peersConfig: PeersConfig = {
-    addresses: [],
-    interval: 1000,
-    timeout: 15_000,
+  const orbitDbStorageConfig: OrbitDbStorageConfig = {
+    bootstrap: { interval: 1000, timeout: 15_000 },
   };
+  let remoteIpfsNodeId: string;
 
   beforeAll(async () => {
     const remoteIpfsNode = create(createIpfsConfigBase('ipfs-remote-node'));
-    const remoteIpfsNodeId = (await (await remoteIpfsNode).id()).id.toString();
-    peersConfig.addresses = [remoteIpfsNodeId];
+    remoteIpfsNodeId = (await (await remoteIpfsNode).id()).id.toString();
   });
 
   afterAll(() => {
-    if (quickTesting) tearDownIpfs();
-  });
-
-  it('can instantiate an OrbitDbStorage class', () => {
-    expect.assertions(1);
-
-    const storageAdapter = new OrbitDbStorage({
-      peersConfig: peersConfig,
-      ipfs: {} as IPFS,
-    });
-
-    expect(storageAdapter).toBeInstanceOf(OrbitDbStorage);
+    tearDownIpfs();
   });
 
   describe('connecting to other peers', () => {
     it(
       'can connect to another IPFS node',
       async () => {
-        expect.assertions(2);
+        expect.assertions(1);
 
         const ipfs = await create(
-          createIpfsConfigConnectingToPeers(
-            'ipfs-storage-adapter-01',
-            peersConfig.addresses
-          )
+          createIpfsConfigConnectingToPeers('ipfs-storage-adapter-01', [
+            remoteIpfsNodeId,
+          ])
         );
         const storageAdapter = new OrbitDbStorage({
-          peersConfig,
+          orbitDbStorageConfig,
           ipfs,
         });
 
@@ -68,9 +51,6 @@ describe('orbitDbStorage', () => {
 
         const connectedPeers = await storageAdapter.ipfsNode.swarm.peers();
         expect(connectedPeers.length).toBeGreaterThan(0);
-
-        const isConnected = await storageAdapter.isConnected();
-        expect(isConnected).toBe(true);
       },
       extendedJestTimeout
     );
@@ -88,7 +68,7 @@ describe('orbitDbStorage', () => {
 
         const storageAdapter = new OrbitDbStorage({
           ipfs,
-          peersConfig,
+          orbitDbStorageConfig,
         });
         await storageAdapter.initialize();
 
@@ -106,7 +86,7 @@ describe('orbitDbStorage', () => {
 
       const storageAdapter = new OrbitDbStorage({
         ipfs,
-        peersConfig,
+        orbitDbStorageConfig,
       });
 
       expect(storageAdapter.orbitDb).toBeUndefined();

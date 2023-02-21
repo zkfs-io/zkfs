@@ -7,7 +7,6 @@ type ValueRecord = Record<string, string[]>;
 
 interface StorageAdapter {
   isReady: () => Promise<void>;
-  isConnected: () => Promise<boolean>;
 
   getMap: (account: address) => Promise<SerializedMerkleMap>;
   getValues: (account: address, keys: string[]) => Promise<ValueRecord>;
@@ -19,16 +18,18 @@ interface StorageAdapter {
   setValue: (account: address, value: ValueRecord) => Promise<void>;
 }
 
-interface PeersConfig {
-  /**
-   * Polling interval in ms for checking peer connections.
-   */
-  interval: number;
+interface OrbitDbStorageConfig {
+  bootstrap: {
+    /**
+     * Polling interval in ms for checking peer connections.
+     */
+    interval: number;
 
-  /**
-   * Timeout when checking for connected peers.
-   */
-  timeout: number;
+    /**
+     * Timeout when checking for connected peers.
+     */
+    timeout: number;
+  };
 }
 
-export { StorageAdapter, PeersConfig };
+export { StorageAdapter, OrbitDbStorageConfig };

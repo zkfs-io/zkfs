@@ -5,18 +5,21 @@ import type { IPFS } from 'ipfs-core';
 import _ from 'lodash';
 import OrbitDB, { OrbitDBAddress } from 'orbit-db';
 
-import type { StorageAdapter, PeersConfig } from './interface.js';
+import type { StorageAdapter, OrbitDbStorageConfig } from './interface.js';
 
 class OrbitDbStorage implements StorageAdapter {
   public ipfsNode: IPFS;
 
-  public peersConfig: PeersConfig;
+  public orbitDbStorageConfig: OrbitDbStorageConfig;
 
   public orbitDb: OrbitDB;
 
-  public constructor(options: { ipfs: IPFS; peersConfig: PeersConfig }) {
+  public constructor(options: {
+    ipfs: IPFS;
+    orbitDbStorageConfig: OrbitDbStorageConfig;
+  }) {
     this.ipfsNode = options.ipfs;
-    this.peersConfig = options.peersConfig;
+    this.orbitDbStorageConfig = options.orbitDbStorageConfig;
   }
 
   /**
@@ -44,7 +47,7 @@ class OrbitDbStorage implements StorageAdapter {
     await new Promise<void>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         reject(new Error(`Can't connect to ZKFS nodes as defined in config.`));
-      }, this.peersConfig.timeout);
+      }, this.orbitDbStorageConfig.bootstrap.timeout);
 
       const timerId = setInterval(async () => {
         const peersList: { peer: { toString: () => string } }[] =
@@ -61,7 +64,7 @@ class OrbitDbStorage implements StorageAdapter {
           clearInterval(timerId);
           resolve();
         }
-      }, this.peersConfig.interval);
+      }, this.orbitDbStorageConfig.bootstrap.interval);
     });
   }
 
