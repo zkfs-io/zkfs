@@ -12,7 +12,7 @@
     "test:ci": "npx lerna run test -- --passWithNoTests --forceExit",
     "test:watch": "npx lerna run test:watch",
     "commit": "cz",
-    "publish:canary": "npx lerna publish --no-private --create-release=github --yes --canary --preid alpha --dist-tag latest --pre-dist-tag latest --loglevel verbose"
+    "publish:canary": "npx lerna publish prerelease --no-private --exact --yes --canary --preid develop --dist-tag latest --loglevel verbose --force-git-tag --force-publish"
   },
   "private": true,
   "devDependencies": {
