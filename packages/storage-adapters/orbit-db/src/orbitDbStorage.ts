@@ -4,6 +4,7 @@ import { multiaddr } from '@multiformats/multiaddr';
 import type { IPFS } from 'ipfs-core';
 import _ from 'lodash';
 import OrbitDB, { OrbitDBAddress } from 'orbit-db';
+import KeyValueStore from 'orbit-db-kvstore';
 
 import type { StorageAdapter, OrbitDbStorageConfig } from './interface.js';
 
@@ -68,9 +69,6 @@ class OrbitDbStorage implements StorageAdapter {
     });
   }
 
-  public getMap(account: string): Promise<string> {
-    throw new Error('Method not implemented.');
-  }
   public getValues(
     account: string,
     keys: string[]
@@ -78,23 +76,78 @@ class OrbitDbStorage implements StorageAdapter {
     throw new Error('Method not implemented.');
   }
 
-  public async registerAccount(account: string): Promise<void> {
+  public async openAccountsStore() {
     const dbAddress = await this.getRegisterAccountOrbitDbAddress();
-    const keyValueStore = await this.orbitDb.keyvalue(dbAddress.toString());
+    const keyValueStore = await this.orbitDb.keyvalue<boolean>(
+      dbAddress.toString()
+    );
+    await keyValueStore.load();
 
-    // TODO: api change for value
-    await keyValueStore.set(account, 'placeholder');
+    return keyValueStore;
+  }
+
+  public async registerAccount(account: string): Promise<void> {
+    const keyValueStore = await this.openAccountsStore();
+    await keyValueStore.set(account, true);
+  }
+
+  public async getRegisteredAccount(account: string) {
+    const keyValueStore = await this.openAccountsStore();
+    return keyValueStore.get(account);
+  }
+
+  public async getAllRegisteredAccounts() {
+    const keyValueStore = await this.openAccountsStore();
+    return keyValueStore.all;
   }
 
   public async getRegisterAccountOrbitDbAddress(): Promise<OrbitDBAddress> {
     return await this.orbitDb.determineAddress('zkfs.addresses', 'keyvalue');
   }
 
-  public setMap(account: string, map: string): Promise<void> {
-    throw new Error('Method not implemented.');
+  public async getMapOrbitDbAddress(account: string) {
+    return await this.orbitDb.determineAddress(
+      `zkfs.map.${account}`,
+      'keyvalue'
+    );
   }
 
-  public setValue(
+  public async openMapStore(account: string) {
+    const dbAddress = await this.getMapOrbitDbAddress(account);
+    const keyValueStore = await this.orbitDb.keyvalue<string>(
+      dbAddress.toString()
+    );
+    await keyValueStore.load();
+
+    return keyValueStore;
+  }
+
+  public async setMap(account: string, map: string): Promise<void> {
+    const keyValueStore = await this.openMapStore(account);
+    await keyValueStore.set('root', map);
+  }
+
+  public async getMap(account: string) {
+    const keyValueStore = await this.openMapStore(account);
+    return keyValueStore.get('root');
+  }
+
+  public async getValueOrbitDbAddress(account: string) {
+    return await this.orbitDb.determineAddress(`zkfs.values.${account}`);
+  }
+
+  public async openValueStore(account: string) {
+    const dbAddress = await this.getValueOrbitDbAddress(account);
+    const keyValueStore = await this.orbitDb.keyvalue<string>(
+      dbAddress.toString()
+    );
+
+    await keyValueStore.load();
+
+    return keyValueStore;
+  }
+
+  public async setValue(
     account: string,
     value: { [x: string]: string[] }
   ): Promise<void> {

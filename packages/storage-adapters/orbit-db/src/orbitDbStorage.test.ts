@@ -92,4 +92,40 @@ describe('orbitDbStorage', () => {
       expect(storageAdapter.orbitDb).toBeUndefined();
     });
   });
+
+  describe('setting & getting values', () => {
+    it('can register address', async () => {
+      expect.assertions(2);
+      const ipfs = await create(
+        createIpfsConfigOffline('ipfs-storage-adapter-04')
+      );
+      const storageAdapter = new OrbitDbStorage({ ipfs, orbitDbStorageConfig });
+      const accountAddress = 'minaAddress';
+
+      await storageAdapter.initialize();
+      await storageAdapter.registerAccount(accountAddress);
+
+      const allAddresses = await storageAdapter.getAllRegisteredAccounts();
+      expect(allAddresses).toEqual({ [`${accountAddress}`]: true });
+
+      const value = await storageAdapter.getRegisteredAccount('minaAddress');
+      expect(value).toEqual(true);
+    });
+
+    it('can set map', async () => {
+      expect.assertions(1);
+      const ipfs = await create(
+        createIpfsConfigOffline('ipfs-storage-adapter-05')
+      );
+      const storageAdapter = new OrbitDbStorage({ ipfs, orbitDbStorageConfig });
+      const accountAddress = 'minaAddress';
+      const map = 'serializedMap';
+
+      await storageAdapter.initialize();
+      await storageAdapter.setMap(accountAddress, map);
+
+      const mapFromStore = await storageAdapter.getMap('minaAddress');
+      expect(mapFromStore).toEqual(map);
+    });
+  });
 });
