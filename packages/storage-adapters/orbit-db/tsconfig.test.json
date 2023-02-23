@@ -6,7 +6,4 @@
     "./test/*.ts",
     "./src/**/*.ts"
   ],
-  "compilerOptions": {
-    "skipLibCheck": true
-  }
 }
