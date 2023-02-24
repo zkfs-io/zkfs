@@ -1,3 +1,3 @@
-// eslint-disable-next-line max-len
-// eslint-disable-next-line import/no-unused-modules, import/prefer-default-export
+/* eslint-disable import/no-unused-modules */
 export { default as OrbitDbStoragePartial } from './orbitDbStoragePartial.js';
+export { default as OrbitDbStorageLight } from './orbitDbStorageLight.js';
