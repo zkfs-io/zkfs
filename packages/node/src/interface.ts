@@ -6,8 +6,7 @@ interface Service {
 type SerializedMerkleMap = string;
 
 // Mina account address as base58
-// eslint-disable-next-line @typescript-eslint/naming-convention
-type address = string;
+type Address = string;
 type ValueRecord = Record<string, string[]>;
 
 interface StorageAdapter {
@@ -15,11 +14,11 @@ interface StorageAdapter {
 
   initialize: () => Promise<void>;
 
-  getMap: (account: address) => Promise<SerializedMerkleMap>;
-  getValues: (account: address, keys: string[]) => Promise<ValueRecord>;
+  getMap: (account: Address) => Promise<SerializedMerkleMap>;
+  getValues: (account: Address, keys: string[]) => Promise<ValueRecord>;
 
-  setMap: (account: address, map: SerializedMerkleMap) => Promise<void>;
-  setValue: (account: address, value: ValueRecord) => Promise<void>;
+  setMap: (account: Address, map: SerializedMerkleMap) => Promise<void>;
+  setValue: (account: Address, value: ValueRecord) => Promise<void>;
 }
 
 interface EventParserAdapter {}
@@ -35,4 +34,11 @@ interface ZkfsNode<Storage = StorageAdapter> {
   eventParser?: EventParserAdapter;
 }
 
-export type { Service, ZkfsNodeConfig, ZkfsNode, StorageAdapter, ValueRecord };
+export type {
+  Service,
+  ZkfsNodeConfig,
+  ZkfsNode,
+  StorageAdapter,
+  ValueRecord,
+  Address,
+};

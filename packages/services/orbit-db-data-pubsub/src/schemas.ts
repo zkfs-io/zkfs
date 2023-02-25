@@ -5,7 +5,7 @@ import { TypeCompiler } from '@sinclair/typebox/compiler';
 
 const requestTopic = 'zkfs:request';
 
-const getMapSchema = Type.Object({
+const getMapRequestSchema = Type.Object({
   id: Type.String(),
   type: Type.RegEx(/getMap/u),
 
@@ -14,6 +14,12 @@ const getMapSchema = Type.Object({
     account: Type.String(),
   }),
 });
+type getMapRequestSchemaType = Static<typeof getMapRequestSchema>;
+
+const getMapResponseSchema = Type.Object({
+  payload: Type.Object({ map: Type.String() }),
+});
+type getMapResponseSchemaType = Static<typeof getMapResponseSchema>;
 
 interface ValidatorFactoryReturn<T> {
   schema: TObject;
@@ -41,6 +47,11 @@ function validatorFactory<T>(schema: TObject): ValidatorFactoryReturn<T> {
   return { schema, verify };
 }
 
-export type getMapSchemaType = Static<typeof getMapSchema>;
+export type { getMapRequestSchemaType, getMapResponseSchemaType };
 
-export { validatorFactory, getMapSchema, requestTopic };
+export {
+  validatorFactory,
+  getMapRequestSchema,
+  getMapResponseSchema,
+  requestTopic,
+};

@@ -2,12 +2,15 @@
 /* eslint-disable unicorn/prevent-abbreviations */
 import type { IPFS } from 'ipfs-core';
 
+// eslint-disable-next-line import/no-relative-packages
+import type { Address } from '../../../node/src/interface.js';
+
 interface OrbitDbStoragePartialConfig {
   ipfs: IPFS;
   /**
    * A list of Mina account addresses to be watched.
    */
-  addresses: string[];
+  addresses: Address[];
 
   bootstrap: {
     /**
@@ -31,7 +34,7 @@ interface OrbitDbStorageLightConfig
   };
 }
 
-export type { OrbitDbStoragePartialConfig, OrbitDbStorageLightConfig };
+export type { OrbitDbStoragePartialConfig, OrbitDbStorageLightConfig, Address };
 
 export type {
   ValueRecord,

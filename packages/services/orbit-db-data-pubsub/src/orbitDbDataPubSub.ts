@@ -10,13 +10,14 @@ import type { Service, ZkfsNode } from '../../../node/src/interface.js';
 
 import {
   validatorFactory,
-  getMapSchema,
+  getMapRequestSchema,
   requestTopic,
-  type getMapSchemaType,
+  type getMapRequestSchemaType,
+  type getMapResponseSchemaType,
 } from './schemas.js';
 
 const getMapRequestValidation =
-  validatorFactory<getMapSchemaType>(getMapSchema);
+  validatorFactory<getMapRequestSchemaType>(getMapRequestSchema);
 
 class OrbitDbDataPubSub implements Service {
   public async initialize(
@@ -36,9 +37,12 @@ class OrbitDbDataPubSub implements Service {
           if (request.type === 'getMap' && request.payload.map === 'root') {
             const map = await zkfsNode.storage.getMap(request.payload.account);
             if (map) {
+              const response: getMapResponseSchemaType = { payload: { map } };
+              // eslint-disable-next-line max-len
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
               await zkfsNode.storage.config.ipfs.pubsub.publish(
                 `response-${request.id}`,
-                new TextEncoder().encode(map)
+                new TextEncoder().encode(JSON.stringify(response))
               );
             }
           }
@@ -46,6 +50,8 @@ class OrbitDbDataPubSub implements Service {
           // eslint-disable-next-line no-console
           console.log(
             'Error decoding orbit-db data provider request\n',
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
             (error as Error).message
           );
         }

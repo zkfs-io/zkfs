@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable unicorn/prevent-abbreviations */
@@ -7,13 +9,19 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Message } from '@libp2p/interface-pubsub';
 
 import {
-  type getMapSchemaType,
+  type getMapRequestSchemaType,
+  type getMapResponseSchemaType,
   requestTopic,
+  getMapResponseSchema,
+  validatorFactory,
   // eslint-disable-next-line import/no-relative-packages
 } from '../../../services/orbit-db-data-pubsub/src/schemas.js';
 
-import type { OrbitDbStorageLightConfig } from './interface.js';
+import type { OrbitDbStorageLightConfig, Address } from './interface.js';
 import OrbitDbStoragePartial from './orbitDbStoragePartial.js';
+
+const getMapResponseValidation =
+  validatorFactory<getMapResponseSchemaType>(getMapResponseSchema);
 
 class OrbitDbStorageLight extends OrbitDbStoragePartial {
   public lightClientConfig: OrbitDbStorageLightConfig;
@@ -25,8 +33,8 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     this.lightClientConfig = config;
   }
 
-  public createGetMapRequest(id: string, account: string) {
-    const requestBody: getMapSchemaType = {
+  public createGetMapRequest(id: string, account: Address) {
+    const requestBody: getMapRequestSchemaType = {
       id,
       type: 'getMap',
       payload: { map: 'root', account },
@@ -34,7 +42,7 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     return new TextEncoder().encode(JSON.stringify(requestBody));
   }
 
-  public override async getMap(account: string): Promise<string> {
+  public override async getMap(account: Address): Promise<string> {
     // eslint-disable-next-line promise/avoid-new, no-async-promise-executor
     return await new Promise<string>(async (resolve, reject) => {
       const timeoutId = setTimeout(() => {
@@ -45,8 +53,23 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
       // subscribe to response
       const onResponseHandler = async (msg: Message) => {
         clearTimeout(timeoutId);
-        const map = await this.getMapResponseHandler(account, msg);
-        resolve(map);
+        try {
+          const serializedMapResponse = new TextDecoder().decode(msg.data);
+          const { map } = getMapResponseValidation.verify(
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+            JSON.parse(serializedMapResponse)
+          ).payload;
+          const mapFromStore = await this.getMapLightClient(account, map);
+          resolve(mapFromStore);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.log(
+            'Error decoding orbit-db data provider request\n',
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+            (error as Error).message
+          );
+        }
       };
       try {
         const id = uuidv4();
@@ -68,23 +91,29 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     });
   }
 
-  public async getMapResponseHandler(account: string, msg: Message) {
-    const keyValueStore = await this.createGetMapDbStore(account);
-    const serializedMapResponse = new TextDecoder().decode(msg.data);
+  public async getMapLightClient(account: Address, map: string) {
+    await this.createStoreInstanceIfNotExisting(account);
 
     // set and retrieve from db store
-    await keyValueStore.set('root', serializedMapResponse);
-    const map = keyValueStore.get('root');
+    await this.setMap(account, map);
 
-    // save db store instance
-    this.storeInstances = {
-      ...this.storeInstances,
-      [this.getZkfsMapPath(account)]: keyValueStore,
-    };
-    return map;
+    const mapStore = this.storeInstances[this.getZkfsMapPath(account)];
+    return mapStore.get('root');
   }
 
-  public async createGetMapDbStore(account: string) {
+  public async createStoreInstanceIfNotExisting(account: Address) {
+    if (
+      !this.storeInstances ||
+      !this.storeInstances[this.getZkfsMapPath(account)]
+    ) {
+      const keyValueStore = await this.createGetMapDbStore(account);
+      this.saveStoreInstances([
+        { [this.getZkfsMapPath(account)]: keyValueStore },
+      ]);
+    }
+  }
+
+  public async createGetMapDbStore(account: Address) {
     const dbAddress = await this.getMapOrbitDbAddress(account);
     return await this.orbitDb.keyvalue<string>(dbAddress.toString());
   }
