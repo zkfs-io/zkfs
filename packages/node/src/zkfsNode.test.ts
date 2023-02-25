@@ -39,7 +39,8 @@ describe('zkfsNode', () => {
     const serverNode = new ZkfsNode(zkfsNodePartialConfig);
     await serverNode.start();
 
-    expect(Object.keys(storageServer.storeInstances).length).toBe(3);
+    // for 3 addresses, there are 6 open stores (map+value)
+    expect(Object.keys(storageServer.storeInstances).length).toBe(6);
 
     // populate with data for testing
     const serializedMap = 'serializedMap';
