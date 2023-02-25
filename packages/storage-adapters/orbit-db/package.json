@@ -12,7 +12,8 @@
     "test:ci": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../../node_modules/jest/bin/jest.js ./src",
     "test:watch": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../../node_modules/jest/bin/jest.js ./src --watch"
   },
-  "main": "dist/index.js",
+  "main": "dist/storage-adapters/orbit-db/src/index.js",
+  "typings": "dist/storage-adapters/orbit-db/src/index.d.ts",
   "publishConfig": {
     "access": "public"
   },

@@ -1,6 +1,9 @@
+/* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable new-cap */
 import { Type, Static, TObject } from '@sinclair/typebox';
 import { TypeCompiler } from '@sinclair/typebox/compiler';
+
+const requestTopic = 'zkfs:request';
 
 const getMapSchema = Type.Object({
   id: Type.String(),
@@ -17,9 +20,7 @@ interface ValidatorFactoryReturn<T> {
   verify: (data: T) => T;
 }
 
-function validatorFactory<T extends unknown>(
-  schema: TObject
-): ValidatorFactoryReturn<T> {
+function validatorFactory<T>(schema: TObject): ValidatorFactoryReturn<T> {
   const compiler = TypeCompiler.Compile(schema);
 
   const verify = function (data: T): T {
@@ -29,7 +30,7 @@ function validatorFactory<T extends unknown>(
     }
     throw new Error(
       JSON.stringify(
-        [...compiler.Errors(data)].map(({ path, message }) => ({
+        Array.from(compiler.Errors(data), ({ path, message }) => ({
           path,
           message,
         }))
@@ -42,4 +43,4 @@ function validatorFactory<T extends unknown>(
 
 export type getMapSchemaType = Static<typeof getMapSchema>;
 
-export { validatorFactory, getMapSchema };
+export { validatorFactory, getMapSchema, requestTopic };

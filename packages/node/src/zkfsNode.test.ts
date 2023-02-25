@@ -1,17 +1,19 @@
 /* eslint-disable unicorn/prevent-abbreviations */
 /* eslint-disable max-statements */
-import ZkfsNode from './zkfsNode.js';
 import {
   OrbitDbStoragePartial,
   OrbitDbStorageLight,
 } from '@zkfs/storage-orbit-db';
 import { create as createIpfs } from 'ipfs-core';
-import { ZkfsNodeConfig } from './interface.js';
+import { OrbitDbDataPubSub } from '@zkfs/orbit-db-data-pubsub';
+
 import {
   createIpfsConfigEmptyBootstrap,
   createIpfsConfigWithBootstrap,
 } from '../test/configs.js';
-import { OrbitDbDataPubSub } from '@zkfs/orbit-db-data-pubsub';
+
+import ZkfsNode from './zkfsNode.js';
+import type { ZkfsNodeConfig } from './interface.js';
 
 describe('zkfsNode', () => {
   it('can set data on server database and get it on light client', async () => {

@@ -1,6 +1,4 @@
-import type { StorageAdapter } from '@zkfs/storage-orbit-db/dist/interface.js';
-
-import type { ZkfsNodeConfig, Service } from './interface.js';
+import type { ZkfsNodeConfig, Service, StorageAdapter } from './interface.js';
 
 class ZkfsNode implements ZkfsNode {
   public storage: StorageAdapter;

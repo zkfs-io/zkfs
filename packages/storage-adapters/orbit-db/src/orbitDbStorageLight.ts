@@ -5,7 +5,12 @@ import { TextEncoder, TextDecoder } from 'node:util';
 
 import { v4 as uuidv4 } from 'uuid';
 import type { Message } from '@libp2p/interface-pubsub';
-import { getMapSchemaType } from '../../../services/orbit-db-data-pubsub/src/schemas.js';
+
+import {
+  type getMapSchemaType,
+  requestTopic,
+  // eslint-disable-next-line import/no-relative-packages
+} from '../../../services/orbit-db-data-pubsub/src/schemas.js';
 
 import type { OrbitDbStorageLightConfig } from './interface.js';
 import OrbitDbStoragePartial from './orbitDbStoragePartial.js';
@@ -56,7 +61,7 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
         const request = this.createGetMapRequest(id, account);
         // eslint-disable-next-line max-len
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        await this.config.ipfs.pubsub.publish(`zkfs:request`, request);
+        await this.config.ipfs.pubsub.publish(requestTopic, request);
       } catch (error) {
         reject(error);
       }
