@@ -34,4 +34,4 @@ interface ZkfsNode<Storage = StorageAdapter> {
   eventParser?: EventParserAdapter;
 }
 
-export { Service, ZkfsNodeConfig, ZkfsNode, StorageAdapter };
+export { Service, ZkfsNodeConfig, ZkfsNode, StorageAdapter, ValueRecord };
