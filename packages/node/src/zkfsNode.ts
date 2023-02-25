@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 import type { ZkfsNodeConfig, Service, StorageAdapter } from './interface.js';
 
 class ZkfsNode implements ZkfsNode {
@@ -5,7 +6,7 @@ class ZkfsNode implements ZkfsNode {
 
   public services: Service[];
 
-  public constructor(config: Readonly<ZkfsNodeConfig>) {
+  public constructor(config: ZkfsNodeConfig) {
     this.storage = config.storage;
     this.services = config.services ?? [];
   }
@@ -13,9 +14,15 @@ class ZkfsNode implements ZkfsNode {
   public async start() {
     await this.storage.isReady();
     await this.storage.initialize();
-    Promise.all(this.services.map((service) => service.initialize(this))).catch(
-      (error) => console.log(error)
-    );
+    Promise.all(
+      this.services.map(async (service) => {
+        await service.initialize(this);
+      })
+      // eslint-disable-next-line promise/prefer-await-to-then
+    ).catch((error: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error(error);
+    });
   }
 }
 

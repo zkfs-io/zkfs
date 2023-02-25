@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 interface Service {
   initialize: (zkfsNode: ZkfsNode) => Promise<void>;
 }
@@ -34,4 +35,4 @@ interface ZkfsNode<Storage = StorageAdapter> {
   eventParser?: EventParserAdapter;
 }
 
-export { Service, ZkfsNodeConfig, ZkfsNode, StorageAdapter, ValueRecord };
+export type { Service, ZkfsNodeConfig, ZkfsNode, StorageAdapter, ValueRecord };
