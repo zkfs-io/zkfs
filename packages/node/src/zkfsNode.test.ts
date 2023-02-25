@@ -11,7 +11,7 @@ import {
   createIpfsConfigEmptyBootstrap,
   createIpfsConfigWithBootstrap,
 } from '../test/configs.js';
-import OrbitDbDataPubSub from './services/OrbitDbDataPubSub.js';
+import { OrbitDbDataPubSub } from '@zkfs/orbit-db-data-pubsub';
 
 describe('zkfsNode', () => {
   it('can set data on server database and get it on light client', async () => {

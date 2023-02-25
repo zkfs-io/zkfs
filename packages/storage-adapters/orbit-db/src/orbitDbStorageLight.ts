@@ -5,6 +5,7 @@ import { TextEncoder, TextDecoder } from 'node:util';
 
 import { v4 as uuidv4 } from 'uuid';
 import type { Message } from '@libp2p/interface-pubsub';
+import { getMapSchemaType } from '../../../services/orbit-db-data-pubsub/src/schemas.js';
 
 import type { OrbitDbStorageLightConfig } from './interface.js';
 import OrbitDbStoragePartial from './orbitDbStoragePartial.js';
@@ -20,13 +21,12 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
   }
 
   public createGetMapRequest(id: string, account: string) {
-    return new TextEncoder().encode(
-      JSON.stringify({
-        id,
-        type: 'getMap',
-        payload: { map: 'root', account },
-      })
-    );
+    const requestBody: getMapSchemaType = {
+      id,
+      type: 'getMap',
+      payload: { map: 'root', account },
+    };
+    return new TextEncoder().encode(JSON.stringify(requestBody));
   }
 
   public override async getMap(account: string): Promise<string> {
