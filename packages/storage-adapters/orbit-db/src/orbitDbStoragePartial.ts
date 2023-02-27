@@ -50,11 +50,20 @@ class OrbitDbStoragePartial implements StorageAdapter {
     return `${this.databasePrefix}zkfs.value.${account}`;
   }
 
+  public getMapStore(account: Address) {
+    return this.storeInstances[this.getZkfsMapPath(account)];
+  }
+
+  public getValueStore(account: Address) {
+    return this.storeInstances[this.getZkfsValuePath(account)];
+  }
+
   public async setValue(account: string, value: ValueRecord): Promise<void> {
     const [key] = Object.keys(value);
-    await this.storeInstances[this.getZkfsValuePath(account)].set(
+
+    await this.getValueStore(account).set(
       key,
-      JSON.stringify(value.key)
+      JSON.stringify(value[String(key)])
     );
   }
 
@@ -62,16 +71,22 @@ class OrbitDbStoragePartial implements StorageAdapter {
     account: Address,
     keys: string[]
   ): Promise<ValueRecord> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line promise/avoid-new
     return await new Promise((resolve) => {
-      throw new Error('not implemented');
+      const store = this.getValueStore(account);
+      let values: ValueRecord = {};
+      keys.forEach((key) => {
+        const value = store.get(key);
+        values = { ...values, [String(key)]: JSON.parse(value) };
+      });
+      resolve(values);
     });
   }
 
   public async getMap(account: Address): Promise<string> {
     // eslint-disable-next-line promise/avoid-new
     return await new Promise((resolve) => {
-      const mapStore = this.storeInstances[this.getZkfsMapPath(account)];
+      const mapStore = this.getMapStore(account);
       resolve(mapStore.get('root'));
     });
   }

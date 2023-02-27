@@ -37,17 +37,10 @@ class OrbitDbDataPubSub implements Service {
             JSON.parse(decodedString)
           );
           if (request.type === 'getMap' && request.payload.key === 'root') {
-            const data = await zkfsNode.storage.getMap(request.payload.account);
-
-            const response: ResponseSchemaType = {
-              payload: { data },
-            };
-            // eslint-disable-next-line max-len
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-            await zkfsNode.storage.config.ipfs.pubsub.publish(
-              responseTopicPrefix + request.id,
-              new TextEncoder().encode(JSON.stringify(response))
-            );
+            await this.handleGetMapRequest(zkfsNode, request);
+          }
+          if (request.type === 'getValues') {
+            await this.handleGetValuesRequest(zkfsNode, request);
           }
         } catch (error) {
           // eslint-disable-next-line no-console
@@ -59,6 +52,51 @@ class OrbitDbDataPubSub implements Service {
           );
         }
       }
+    );
+  }
+
+  public async handleGetMapRequest(
+    zkfsNode: ZkfsNode<OrbitDbStoragePartial>,
+    request: {
+      id: string;
+      type: string;
+      payload: { key: string; account: string };
+    }
+  ) {
+    const data = await zkfsNode.storage.getMap(request.payload.account);
+
+    const response: ResponseSchemaType = {
+      payload: { data },
+    };
+    // eslint-disable-next-line max-len
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+    await zkfsNode.storage.config.ipfs.pubsub.publish(
+      responseTopicPrefix + request.id,
+      new TextEncoder().encode(JSON.stringify(response))
+    );
+  }
+
+  public async handleGetValuesRequest(
+    zkfsNode: ZkfsNode<OrbitDbStoragePartial>,
+    request: {
+      id: string;
+      type: string;
+      payload: { key: string; account: string };
+    }
+  ) {
+    const data = await zkfsNode.storage.getValues(
+      request.payload.account,
+      JSON.parse(request.payload.key)
+    );
+
+    const response: ResponseSchemaType = {
+      payload: { data: JSON.stringify(data) },
+    };
+    // eslint-disable-next-line max-len
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+    await zkfsNode.storage.config.ipfs.pubsub.publish(
+      responseTopicPrefix + request.id,
+      new TextEncoder().encode(JSON.stringify(response))
     );
   }
 }
