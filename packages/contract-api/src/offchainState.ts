@@ -1,5 +1,7 @@
 import { type Field, Circuit, MerkleMapWitness, Poseidon } from 'snarkyjs';
 
+// bump version
+
 // eslint-disable-next-line import/no-relative-packages
 import type { FlexibleProvablePure } from '../../../node_modules/snarkyjs/dist/node/lib/circuit_value.js';
 
@@ -87,10 +89,14 @@ class OffchainState<MapValue> {
    */
   public getValue(): this {
     this.value = Circuit.witness<MapValue>(asWritable(this.valueType), () => {
-      const [fields] = this.contract.virtualStorage.get(
-        this.contract.address,
-        this.key
+      const fields = this.contract.virtualStorage.getValue(
+        this.contract.address.toBase58(),
+        this.key.toString()
       );
+
+      if (fields === undefined) {
+        throw new Error(`Unable to find value for key: ${this.key.toString()}`);
+      }
 
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       return this.valueType.fromFields(fields) as MapValue;
@@ -105,14 +111,12 @@ class OffchainState<MapValue> {
    * @returns this
    */
   public getWitness(): this {
-    this.witness = Circuit.witness<MerkleMapWitness>(MerkleMapWitness, () => {
-      const [, witness] = this.contract.virtualStorage.get(
-        this.contract.address,
-        this.key
-      );
-
-      return witness;
-    });
+    this.witness = Circuit.witness<MerkleMapWitness>(MerkleMapWitness, () =>
+      this.contract.virtualStorage.getWitness(
+        this.contract.address.toBase58(),
+        this.key.toString()
+      )
+    );
 
     return this;
   }
@@ -178,7 +182,12 @@ class OffchainState<MapValue> {
 
     // write the update to the virtual storage
     const fields = this.valueType.toFields(this.value);
-    this.contract.virtualStorage.set(this.contract.address, this.key, fields);
+
+    this.contract.virtualStorage.setValue(
+      this.contract.address.toBase58(),
+      this.key.toString(),
+      fields
+    );
     this.getWitness();
 
     if (this.options.shouldUpdateRootHash ?? false) {
