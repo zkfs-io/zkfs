@@ -9,19 +9,19 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Message } from '@libp2p/interface-pubsub';
 
 import {
-  type getMapRequestSchemaType,
-  type getMapResponseSchemaType,
+  type RequestSchemaType,
+  type ResponseSchemaType,
   requestTopic,
-  getMapResponseSchema,
+  responseSchema,
   validatorFactory,
+  responseTopicPrefix,
   // eslint-disable-next-line import/no-relative-packages
 } from '../../../services/orbit-db-data-pubsub/src/schemas.js';
 
 import type { OrbitDbStorageLightConfig, Address } from './interface.js';
 import OrbitDbStoragePartial from './orbitDbStoragePartial.js';
 
-const getMapResponseValidation =
-  validatorFactory<getMapResponseSchemaType>(getMapResponseSchema);
+const responseValidation = validatorFactory<ResponseSchemaType>(responseSchema);
 
 class OrbitDbStorageLight extends OrbitDbStoragePartial {
   public lightClientConfig: OrbitDbStorageLightConfig;
@@ -33,11 +33,11 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     this.lightClientConfig = config;
   }
 
-  public createGetMapRequest(id: string, account: Address) {
-    const requestBody: getMapRequestSchemaType = {
+  public createGetMapRequest(id: string, account: Address, key: string) {
+    const requestBody: RequestSchemaType = {
       id,
       type: 'getMap',
-      payload: { map: 'root', account },
+      payload: { key, account },
     };
     return new TextEncoder().encode(JSON.stringify(requestBody));
   }
@@ -55,11 +55,12 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
         clearTimeout(timeoutId);
         try {
           const serializedMapResponse = new TextDecoder().decode(msg.data);
-          const { map } = getMapResponseValidation.verify(
+          const { data } = responseValidation.verify(
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
             JSON.parse(serializedMapResponse)
           ).payload;
-          const mapFromStore = await this.getMapLightClient(account, map);
+
+          const mapFromStore = await this.getMapLightClient(account, data);
           resolve(mapFromStore);
         } catch (error) {
           // eslint-disable-next-line no-console
@@ -76,12 +77,12 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
         // eslint-disable-next-line max-len
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
         await this.config.ipfs.pubsub.subscribe(
-          `response-${id}`,
+          responseTopicPrefix + id,
           onResponseHandler
         );
 
         // publish request
-        const request = this.createGetMapRequest(id, account);
+        const request = this.createGetMapRequest(id, account, 'root');
         // eslint-disable-next-line max-len
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
         await this.config.ipfs.pubsub.publish(requestTopic, request);

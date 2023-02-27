@@ -17,15 +17,13 @@
     "access": "public"
   },
   "dependencies": {
-    "@sinclair/typebox": "^0.25.24",
-    "@zkfs/storage-orbit-db": "*",
     "@zkfs/orbit-db-data-pubsub": "*",
+    "@zkfs/storage-orbit-db": "*",
     "ipfs-core": "^0.18.0"
   },
   "devDependencies": {
+    "@types/ipfs-core": "npm:ipfs-core-types@^0.14.0",
     "@types/lodash": "^4.14.191",
-    "eslint": "^8.33.0",
-    "lodash": "^4.17.21",
-    "@types/ipfs-core": "npm:ipfs-core-types@^0.14.0"
+    "eslint": "^8.33.0"
   }
 }

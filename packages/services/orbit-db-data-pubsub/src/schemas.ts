@@ -1,25 +1,27 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable new-cap */
-import { Type, Static, TObject } from '@sinclair/typebox';
+import { Type, type Static, type TObject } from '@sinclair/typebox';
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 
 const requestTopic = 'zkfs:request';
-
-const getMapRequestSchema = Type.Object({
+const requestSchema = Type.Object({
   id: Type.String(),
-  type: Type.RegEx(/getMap/u),
+  type: Type.Union([Type.RegEx(/getMap/u), Type.RegEx(/getValues/u)]),
 
   payload: Type.Object({
-    map: Type.String(),
+    key: Type.String(),
     account: Type.String(),
   }),
 });
-type getMapRequestSchemaType = Static<typeof getMapRequestSchema>;
+type RequestSchemaType = Static<typeof requestSchema>;
 
-const getMapResponseSchema = Type.Object({
-  payload: Type.Object({ map: Type.String() }),
+const responseTopicPrefix = 'zkfs:response-';
+const responseSchema = Type.Object({
+  payload: Type.Object({
+    data: Type.String(),
+  }),
 });
-type getMapResponseSchemaType = Static<typeof getMapResponseSchema>;
+type ResponseSchemaType = Static<typeof responseSchema>;
 
 interface ValidatorFactoryReturn<T> {
   schema: TObject;
@@ -47,11 +49,12 @@ function validatorFactory<T>(schema: TObject): ValidatorFactoryReturn<T> {
   return { schema, verify };
 }
 
-export type { getMapRequestSchemaType, getMapResponseSchemaType };
+export type { RequestSchemaType, ResponseSchemaType };
 
 export {
   validatorFactory,
-  getMapRequestSchema,
-  getMapResponseSchema,
+  requestSchema,
+  responseSchema,
   requestTopic,
+  responseTopicPrefix,
 };

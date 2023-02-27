@@ -18,6 +18,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@libp2p/interface-pubsub": "^3.0.6"
+    "@libp2p/interface-pubsub": "^3.0.6",
+    "@sinclair/typebox": "^0.25.24"
   }
 }

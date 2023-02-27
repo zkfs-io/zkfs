@@ -14,6 +14,8 @@ import type {
   StorageAdapter,
   ValueRecord,
   OrbitDbStoragePartialConfig,
+  Address,
+  OrbitDbAddress,
 } from './interface.js';
 import errorBootstrapNodesNotConnected from './errors.js';
 
@@ -22,7 +24,7 @@ interface PartialPeersResult {
 }
 
 class OrbitDbStoragePartial implements StorageAdapter {
-  public storeInstances: Record<string, KeyValueStore<string>>;
+  public storeInstances: Record<OrbitDbAddress, KeyValueStore<string>>;
 
   public ipfsNode: IPFS;
 
@@ -30,24 +32,51 @@ class OrbitDbStoragePartial implements StorageAdapter {
 
   public orbitDb: OrbitDB;
 
-  public setValue: (account: string, value: ValueRecord) => Promise<void>;
-
-  public getValues: (account: string, keys: string[]) => Promise<ValueRecord>;
-
   public constructor(public config: OrbitDbStoragePartialConfig) {}
+
+  public saveStoreInstances(
+    orbitDbStoresArray: Record<OrbitDbAddress, KeyValueStore<string>>[]
+  ) {
+    orbitDbStoresArray.forEach((store) => {
+      this.storeInstances = { ...this.storeInstances, ...store };
+    });
+  }
 
   public getZkfsMapPath(account: string) {
     return `${this.databasePrefix}zkfs.map.${account}`;
   }
 
-  public async getMap(account: string): Promise<string> {
-    // eslint-disable-next-line promise/avoid-new
+  public getZkfsValuePath(account: string) {
+    return `${this.databasePrefix}zkfs.value.${account}`;
+  }
+
+  public async setValue(account: string, value: ValueRecord): Promise<void> {
+    const [key] = Object.keys(value);
+    await this.storeInstances[this.getZkfsValuePath(account)].set(
+      key,
+      JSON.stringify(value.key)
+    );
+  }
+
+  public async getValues(
+    account: Address,
+    keys: string[]
+  ): Promise<ValueRecord> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return await new Promise((resolve) => {
-      resolve(this.storeInstances[this.getZkfsMapPath(account)].get('root'));
+      throw new Error('not implemented');
     });
   }
 
-  public async getMapOrbitDbAddress(account: string) {
+  public async getMap(account: Address): Promise<string> {
+    // eslint-disable-next-line promise/avoid-new
+    return await new Promise((resolve) => {
+      const mapStore = this.storeInstances[this.getZkfsMapPath(account)];
+      resolve(mapStore.get('root'));
+    });
+  }
+
+  public async getMapOrbitDbAddress(account: Address) {
     return await this.orbitDb.determineAddress(
       this.getZkfsMapPath(account),
       'keyvalue'
@@ -57,8 +86,38 @@ class OrbitDbStoragePartial implements StorageAdapter {
   public async initialize(): Promise<void> {
     this.orbitDb = await OrbitDB.createInstance(this.config.ipfs);
 
-    const orbitDbStoresMapArray = await Promise.all(
-      this.config.addresses.map(async (address) => {
+    // create for list of addresses all map orbit-db stores
+    const orbitDbStoresMapArray = await this.createAndLoadMapStores(
+      this.config.addresses
+    );
+    // save all map store instances
+    this.saveStoreInstances(orbitDbStoresMapArray);
+
+    // create for list of addresses all value orbit-db stores
+    const orbitDbStoresValueArray = await this.createAndLoadValueStores(
+      this.config.addresses
+    );
+    // save all value stores instances
+    this.saveStoreInstances(orbitDbStoresValueArray);
+  }
+
+  public async createAndLoadValueStores(addresses: string[]) {
+    return await Promise.all(
+      addresses.map(async (address) => {
+        const dbAddress = await this.getValueOrbitDbAddress(address);
+        const keyValueStore = await this.orbitDb.keyvalue<string>(
+          dbAddress.toString()
+        );
+        await keyValueStore.load();
+
+        return { [this.getZkfsValuePath(address)]: keyValueStore };
+      })
+    );
+  }
+
+  public async createAndLoadMapStores(addresses: Address[]) {
+    return await Promise.all(
+      addresses.map(async (address) => {
         const dbAddress = await this.getMapOrbitDbAddress(address);
         const keyValueStore = await this.orbitDb.keyvalue<string>(
           dbAddress.toString()
@@ -68,10 +127,13 @@ class OrbitDbStoragePartial implements StorageAdapter {
         return { [this.getZkfsMapPath(address)]: keyValueStore };
       })
     );
+  }
 
-    orbitDbStoresMapArray.forEach((store) => {
-      this.storeInstances = { ...this.storeInstances, ...store };
-    });
+  public async getValueOrbitDbAddress(account: Address) {
+    return await this.orbitDb.determineAddress(
+      this.getZkfsValuePath(account),
+      'keyvalue'
+    );
   }
 
   public async isReady(): Promise<void> {
@@ -112,7 +174,7 @@ class OrbitDbStoragePartial implements StorageAdapter {
     });
   }
 
-  public async setMap(account: string, map: string): Promise<void> {
+  public async setMap(account: Address, map: string): Promise<void> {
     await this.storeInstances[this.getZkfsMapPath(account)].set('root', map);
   }
 }

@@ -34,7 +34,14 @@ interface OrbitDbStorageLightConfig
   };
 }
 
-export type { OrbitDbStoragePartialConfig, OrbitDbStorageLightConfig, Address };
+type OrbitDbAddress = string;
+
+export type {
+  OrbitDbStoragePartialConfig,
+  OrbitDbStorageLightConfig,
+  Address,
+  OrbitDbAddress,
+};
 
 export type {
   ValueRecord,

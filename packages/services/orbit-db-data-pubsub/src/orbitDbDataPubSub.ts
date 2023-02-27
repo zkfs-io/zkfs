@@ -3,21 +3,23 @@
 import { TextEncoder, TextDecoder } from 'node:util';
 
 import type { Message } from '@libp2p/interface-pubsub';
-import type OrbitDbStoragePartial from '../../../storage-adapters/orbit-db/src/orbitDbStoragePartial.js';
 
+// eslint-disable-next-line import/no-relative-packages
+import type OrbitDbStoragePartial from '../../../storage-adapters/orbit-db/src/orbitDbStoragePartial.js';
 // eslint-disable-next-line import/no-relative-packages
 import type { Service, ZkfsNode } from '../../../node/src/interface.js';
 
 import {
   validatorFactory,
-  getMapRequestSchema,
+  requestSchema,
   requestTopic,
-  type getMapRequestSchemaType,
-  type getMapResponseSchemaType,
+  type RequestSchemaType,
+  type ResponseSchemaType,
+  responseTopicPrefix,
 } from './schemas.js';
 
 const getMapRequestValidation =
-  validatorFactory<getMapRequestSchemaType>(getMapRequestSchema);
+  validatorFactory<RequestSchemaType>(requestSchema);
 
 class OrbitDbDataPubSub implements Service {
   public async initialize(
@@ -34,22 +36,23 @@ class OrbitDbDataPubSub implements Service {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
             JSON.parse(decodedString)
           );
-          if (request.type === 'getMap' && request.payload.map === 'root') {
-            const map = await zkfsNode.storage.getMap(request.payload.account);
-            if (map) {
-              const response: getMapResponseSchemaType = { payload: { map } };
-              // eslint-disable-next-line max-len
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-              await zkfsNode.storage.config.ipfs.pubsub.publish(
-                `response-${request.id}`,
-                new TextEncoder().encode(JSON.stringify(response))
-              );
-            }
+          if (request.type === 'getMap' && request.payload.key === 'root') {
+            const data = await zkfsNode.storage.getMap(request.payload.account);
+
+            const response: ResponseSchemaType = {
+              payload: { data },
+            };
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+            await zkfsNode.storage.config.ipfs.pubsub.publish(
+              responseTopicPrefix + request.id,
+              new TextEncoder().encode(JSON.stringify(response))
+            );
           }
         } catch (error) {
           // eslint-disable-next-line no-console
           console.log(
-            'Error decoding orbit-db data provider request\n',
+            'Error handling getMap for orbit-db data provider request\n',
             // eslint-disable-next-line max-len
             // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
             (error as Error).message
