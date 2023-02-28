@@ -3,7 +3,10 @@
 import { Type, type Static, type TObject } from '@sinclair/typebox';
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 
+/* Defining a constant that is used to prefix the request topic. */
 const requestTopic = 'zkfs:request';
+
+/* Defining a schema for the request object. */
 const requestSchema = Type.Object({
   id: Type.String(),
   type: Type.Union([Type.RegEx(/getMap/u), Type.RegEx(/getValues/u)]),
@@ -15,7 +18,10 @@ const requestSchema = Type.Object({
 });
 type RequestSchemaType = Static<typeof requestSchema>;
 
+/* A constant that is used to prefix the response topic. */
 const responseTopicPrefix = 'zkfs:response-';
+
+/* Defining the response schema. */
 const responseSchema = Type.Object({
   payload: Type.Object({
     data: Type.String(),

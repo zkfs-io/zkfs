@@ -26,6 +26,8 @@ import OrbitDbStoragePartial from './orbitDbStoragePartial.js';
 
 const responseValidation = validatorFactory<ResponseSchemaType>(responseSchema);
 
+/* It's a class that extends the OrbitDbStoragePartial class and overrides the getMap and getValues
+methods to use the light client */
 class OrbitDbStorageLight extends OrbitDbStoragePartial {
   public lightClientConfig: OrbitDbStorageLightConfig;
 
@@ -36,6 +38,14 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     this.lightClientConfig = config;
   }
 
+  /**
+   * It takes a key and an account address and returns a request body that can be sent to the contract
+   *
+   * @param {string} id - A unique identifier for the request.
+   * @param {Address} account - The account address of the user who is making the request.
+   * @param {string} key - The key of the map you want to get.
+   * @returns A byte array of the request body.
+   */
   public createGetMapRequest(id: string, account: Address, key: string) {
     const requestBody: RequestSchemaType = {
       id,
@@ -45,6 +55,15 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     return new TextEncoder().encode(JSON.stringify(requestBody));
   }
 
+  /**
+   * It takes an id, an account address, and an array of keys, and returns a request body that can be
+   * sent to the API
+   *
+   * @param {string} id - A unique identifier for the request.
+   * @param {Address} account - The account address of the user who is making the request.
+   * @param {string[]} keys - The keys you want to get the values for.
+   * @returns A byte array of the request body.
+   */
   public createGetValuesRequest(id: string, account: Address, keys: string[]) {
     const requestBody: RequestSchemaType = {
       id,
@@ -54,6 +73,12 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     return new TextEncoder().encode(JSON.stringify(requestBody));
   }
 
+  /**
+   * It takes a PubSub message, decodes it, validates it, and returns the data
+   *
+   * @param {Message} msg - Message - The message object that is returned from the PubSub subscription.
+   * @returns The data from the pubsub message.
+   */
   public getDataFromPubSubMessage(msg: Message) {
     const decodedResponseMessage = new TextDecoder().decode(msg.data);
     const { data } = responseValidation.verify(
@@ -63,6 +88,13 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     return data;
   }
 
+  /**
+   * It subscribes to a response topic, publishes a request to the request topic,
+   * and then waits for a response to the first topic.
+   *
+   * @param {Address} account - Address - The account address to get the map for
+   * @returns A promise that resolves to a string.
+   */
   public override async getMap(account: Address): Promise<string> {
     // eslint-disable-next-line promise/avoid-new, no-async-promise-executor
     return await new Promise<string>(async (resolve, reject) => {
@@ -108,6 +140,14 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     });
   }
 
+  /**
+   * It subscribes to a response topic, publishes a request to the request topic,
+   * and then waits for a response to the first topic.
+   *
+   * @param {Address} account - Address - The account address to get the values for
+   * @param {string[]} keys - All keys of ValueRecords that are requested
+   * @returns A promise that resolves to a ValueRecord.
+   */
   public override async getValues(
     account: Address,
     keys: string[]
@@ -218,6 +258,11 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     return valueRecordsFromStore;
   }
 
+  /**
+   * If the store instance for the account doesn't exist, create it
+   * @param {Address} account - Address of the account that is being used to create the map store
+   * instance.
+   */
   public async createMapStoreInstanceIfNotExisting(account: Address) {
     if (!this.storeInstances || !this.getValueStore(account)) {
       const keyValueStore = await this.createGetMapDbStore(account);
@@ -227,6 +272,11 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     }
   }
 
+  /**
+   * If the storeInstances object doesn't exist or the account's store doesn't exist, create a new
+   * store and save it to the storeInstances object
+   * @param {Address} account - Address of the account for which the value store is being created.
+   */
   public async createValueStoreInstanceIfNotExisting(account: Address) {
     if (!this.storeInstances || !this.getMapStore(account)) {
       const keyValueStore = await this.createGetValueDbStore(account);
@@ -236,11 +286,23 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     }
   }
 
+  /**
+   * Create a key-value store for merkle maps for the given account
+   *
+   * @param {Address} account - The account address of the user.
+   * @returns A key value store.
+   */
   public async createGetMapDbStore(account: Address) {
     const dbAddress = await this.getMapOrbitDbAddress(account);
     return await this.orbitDb.keyvalue<string>(dbAddress.toString());
   }
 
+  /**
+   * Create a key-value store for merkle map values for the given account
+   *
+   * @param {Address} account - Address - The account address of the user
+   * @returns A key value store.
+   */
   public async createGetValueDbStore(account: Address) {
     const dbAddress = await this.getMapOrbitDbAddress(account);
     return await this.orbitDb.keyvalue<string>(dbAddress.toString());

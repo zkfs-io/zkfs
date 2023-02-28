@@ -22,6 +22,11 @@ const getMapRequestValidation =
   validatorFactory<RequestSchemaType>(requestSchema);
 
 class OrbitDbDataPubSub implements Service {
+  /**
+   * It subscribes to the request and handles incoming requests
+   *
+   * @param zkfsNode - ZkfsNode<OrbitDbStoragePartial>
+   */
   public async initialize(
     zkfsNode: ZkfsNode<OrbitDbStoragePartial>
   ): Promise<void> {
@@ -55,13 +60,15 @@ class OrbitDbDataPubSub implements Service {
     );
   }
 
+  /**
+   * It takes a request, gets the data from the storage, and publishes the response
+   *
+   * @param zkfsNode - ZkfsNode<OrbitDbStoragePartial>
+   * @param {RequestSchemaType} request - RequestSchemaType
+   */
   public async handleGetMapRequest(
     zkfsNode: ZkfsNode<OrbitDbStoragePartial>,
-    request: {
-      id: string;
-      type: string;
-      payload: { key: string; account: string };
-    }
+    request: RequestSchemaType
   ) {
     const data = await zkfsNode.storage.getMap(request.payload.account);
 
@@ -76,13 +83,15 @@ class OrbitDbDataPubSub implements Service {
     );
   }
 
+  /**
+   * It takes a request, gets the data from the storage, and publishes the response
+   *
+   * @param zkfsNode - ZkfsNode<OrbitDbStoragePartial>
+   * @param {RequestSchemaType} request - RequestSchemaType
+   */
   public async handleGetValuesRequest(
     zkfsNode: ZkfsNode<OrbitDbStoragePartial>,
-    request: {
-      id: string;
-      type: string;
-      payload: { key: string; account: string };
-    }
+    request: RequestSchemaType
   ) {
     const data = await zkfsNode.storage.getValues(
       request.payload.account,
