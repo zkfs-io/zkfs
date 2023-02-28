@@ -1,211 +1,441 @@
-import { type Field, Circuit, MerkleMapWitness, Poseidon } from 'snarkyjs';
-
-// bump version
+/* eslint-disable max-lines */
+/* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
+/* eslint-disable new-cap */
+/* eslint-disable max-statements */
+import { Field, MerkleMapWitness, Poseidon } from 'snarkyjs';
 
 // eslint-disable-next-line import/no-relative-packages
-import type { FlexibleProvablePure } from '../../../node_modules/snarkyjs/dist/node/lib/circuit_value.js';
+import { Events } from '../../../node_modules/snarkyjs/dist/node/provable/transaction-leaves.js';
+import {
+  Circuit,
+  type FlexibleProvablePure,
+  // eslint-disable-next-line import/no-relative-packages
+} from '../../../node_modules/snarkyjs/dist/node/lib/circuit_value.js';
 
+// eslint-disable-next-line import/no-cycle
+import OffchainStateMap from './offchainStateMap.js';
+import type Key from './key.js';
 import type OffchainStateContract from './offchainStateContract.js';
+import errors from './errors.js';
+import type OffchainStateMapRoot from './offchainStateMapRoot.js';
 
-// utility function to cast Readonly<Value> to Value type
-function asWritable<Value>(value: Readonly<Value>): Value {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  return value as Value;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+interface UpdateRootHashOptions {
+  shouldEmitEvent: boolean;
 }
 
-/**
- * Options for the OffchainState class, allows adjusting
- * of the underlying OffchainState behavior such as when
- * to produce preconditions, or apply state assertions.
- */
-interface OffchainStateOptions {
-  shouldAssertInTree?: boolean;
-  shouldUpdateRootHash?: boolean;
-}
-
-/**
- * Provides an API for the contracts to access off-chain state
- * seamlessly. Manages values, witnesses and preconditions related
- * to off-chain state.
- */
-class OffchainState<MapValue> {
-  public static from<MapValue>(
-    valueType: Readonly<FlexibleProvablePure<MapValue>>,
-    options?: Readonly<OffchainStateOptions>
-  ) {
-    return new OffchainState(valueType, options);
-  }
-
-  // current value of the OffchainState
-  public value: MapValue;
-
-  // current merkle witness for the current key
-  public witness: MerkleMapWitness;
-
-  // reference to the underlying contract, provides access to virtual storage
-  public contract: OffchainStateContract;
-
-  // key in the merkle map, that this state belongs to
-  public key: Readonly<Field>;
-
-  public constructor(
-    public valueType: Readonly<FlexibleProvablePure<MapValue>>,
-    public options: OffchainStateOptions = {
-      shouldAssertInTree: true,
-      shouldUpdateRootHash: true,
-    }
-  ) {}
-
+/* `OffchainState` is a class that represents a value in a map */
+class OffchainState<KeyType, ValueType> {
   /**
-   * Converts the value `.toFields()` and hashes it,
-   * in order to work with it within a merkle tree.
+   * "Create a new OffchainState object, and set
+   * its parent, valueType, and key properties."
    *
-   * @returns Hash of the offchain state value
+   * @param {OffchainStateMap | OffchainStateMapRoot} parent
+   * The parent of this state. This is either
+   * an OffchainStateMap or an OffchainStateMapRoot.
+   * @param valueType - FlexibleProvablePure<ValueType>
+   * @param key - The key of the state.
+   * @returns An OffchainState object
    */
-  public toTreeValueHash(): Field {
-    const fields = this.valueType.toFields(this.value);
-    return Poseidon.hash(fields);
+  public static fromParent<KeyType, ValueType>(
+    parent: OffchainStateMap | OffchainStateMapRoot,
+    valueType: FlexibleProvablePure<ValueType>,
+    key: Key<KeyType>
+  ): OffchainState<KeyType, ValueType> {
+    const state = new OffchainState<KeyType, ValueType>();
+    state.parent = parent;
+    state.valueType = valueType;
+    state.key = key;
+    return state;
   }
 
   /**
-   * Creates a set of transaction preconditions verifying
-   * that the current value + key belong in the desired tree
+   * "Create a new OffchainState object with
+   * the given value and parent, and return it."
+   *
+   * @param {ValueType} value - The value of the state.
+   * @param {OffchainStateMap | OffchainStateMapRoot} [parent]
+   * The parent of this state. If this
+   * state is a child of another state, then the parent is the parent state.
+   *
+   * @returns An OffchainState object with the value and parent set.
    */
-  public assertInTree(offchainStateRootHash: Readonly<Field>): this {
-    const valueHash = this.toTreeValueHash();
-    const [stateRootHashFromValue, keyFromValue] =
-      this.witness.computeRootAndKey(valueHash);
-
-    // check if value + key combination exists in the desired tree
-    this.key.assertEquals(keyFromValue);
-    offchainStateRootHash.assertEquals(stateRootHashFromValue);
-
-    return this;
+  // eslint-disable-next-line etc/no-misused-generics
+  public static fromValue<KeyType, ValueType>(
+    value: ValueType,
+    parent?: OffchainStateMap | OffchainStateMapRoot
+  ): OffchainState<KeyType, ValueType> {
+    const state = new OffchainState<KeyType, ValueType>();
+    state.value = value;
+    state.parent = parent;
+    return state;
   }
 
   /**
-   * Provides a circuit witness for the current value from the virtual storage
-   * @returns this
+   * It creates a new offchain state, and sets
+   * the value type to the given value type
+   *
+   * @param valueType - FlexibleProvablePure<ValueType>
+   * @returns A new OffchainState object.
    */
-  public getValue(): this {
-    this.value = Circuit.witness<MapValue>(asWritable(this.valueType), () => {
-      const fields = this.contract.virtualStorage.getValue(
-        this.contract.address.toBase58(),
-        this.key.toString()
-      );
+  public static fromRoot<ValueType>(
+    valueType: FlexibleProvablePure<ValueType>
+  ): OffchainState<Field, ValueType> {
+    const state = new OffchainState<Field, ValueType>();
+    state.valueType = valueType;
+    return state;
+  }
 
-      if (fields === undefined) {
-        throw new Error(`Unable to find value for key: ${this.key.toString()}`);
+  /**
+   * This function returns a new OffchainStateMap object.
+   *
+   * @returns A new instance of OffchainStateMap
+   */
+  public static fromMap(): OffchainStateMap {
+    return new OffchainStateMap();
+  }
+
+  public contract?: OffchainStateContract;
+
+  // key under which the value is stored
+  public key?: Key<KeyType>;
+
+  // value of the state
+  public value?: ValueType;
+
+  public valueType?: FlexibleProvablePure<ValueType>;
+
+  public witness?: MerkleMapWitness;
+
+  // parent map, under which the value is stored under a key
+  public parent?: OffchainStateMap | OffchainStateMapRoot;
+
+  /**
+   * It gets the value fields from the virtual storage
+   *
+   * @returns The value fields from the virtual storage.
+   */
+  public getValueFieldsFromVirtualStorage(): Field[] | undefined {
+    if (!this.valueType) {
+      throw errors.valueTypeNotFound();
+    }
+
+    if (!this.contract) {
+      throw errors.contractNotFound();
+    }
+
+    if (!this.contract.virtualStorage) {
+      throw errors.virtualStorageNotFound();
+    }
+
+    if (!this.parent?.mapName) {
+      throw errors.parentMapNotFound();
+    }
+
+    if (!this.key) {
+      throw errors.keyNotFound();
+    }
+
+    return this.contract.virtualStorage.getValue(
+      this.contract.address.toBase58(),
+      this.parent.mapName.toString(),
+      this.key.toString()
+    );
+  }
+
+  /**
+   * "If the value type is not found, throw an error. Otherwise,
+   * get the value fields from virtual storage, and if they are not found,
+   * throw an error. Otherwise, if the value type is not found,throw an error.
+   * Otherwise, return the value type from the fields."
+   *
+   * The first thing to notice is that the function is not returning a value.
+   * Instead, it is setting the value of the `this.value` property.
+   *
+   * @returns The value of the key in the virtual storage.
+   */
+  public getValue() {
+    if (!this.valueType) {
+      throw errors.valueTypeNotFound();
+    }
+
+    this.value = Circuit.witness<ValueType>(this.valueType, () => {
+      const valueFields = this.getValueFieldsFromVirtualStorage();
+
+      if (!valueFields) {
+        throw errors.valueFieldsNotFound();
+      }
+
+      if (!this.valueType) {
+        throw errors.valueTypeNotFound();
       }
 
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      return this.valueType.fromFields(fields) as MapValue;
+      return this.valueType.fromFields(valueFields) as ValueType;
     });
 
-    return this;
+    return this.value;
   }
 
   /**
-   * Provides a circuit witness for the current merkle witness
-   * from the virtual storage
-   * @returns this
-   */
-  public getWitness(): this {
-    this.witness = Circuit.witness<MerkleMapWitness>(MerkleMapWitness, () =>
-      this.contract.virtualStorage.getWitness(
-        this.contract.address.toBase58(),
-        this.key.toString()
-      )
-    );
-
-    return this;
-  }
-
-  /**
-   * Provides circuit witnesses for both the value and merkle witness.
-   * Optionally it checks if the provided value satisfies the on-chain
-   * root hash commitment.
+   * It returns a witness for the value of the key in the map
    *
-   * @returns this
+   * @returns The witness is being returned.
    */
-  public get(): this {
-    // asWritable allows us to expose `valueType` as non-Readonly
-    this.getValue();
-    this.getWitness();
+  public getWitness() {
+    this.witness = Circuit.witness<MerkleMapWitness>(MerkleMapWitness, () => {
+      if (!this.contract) {
+        throw errors.contractNotFound();
+      }
 
-    if (this.options.shouldAssertInTree ?? false) {
-      this.assertInOnChainTree();
+      if (!this.contract.virtualStorage) {
+        throw errors.virtualStorageNotFound();
+      }
+
+      if (!this.parent?.mapName) {
+        throw errors.parentMapNotFound();
+      }
+
+      if (!this.key) {
+        throw errors.keyNotFound();
+      }
+
+      return this.contract.virtualStorage.getWitness(
+        this.contract.address.toBase58(),
+        this.parent.mapName.toString(),
+        this.key.toString()
+      );
+    });
+
+    return this.witness;
+  }
+
+  /**
+   * It gets the value of the offchain state
+   *
+   * @returns The value of the offchain state.
+   */
+  public get(): ValueType {
+    if (!this.valueType) {
+      throw errors.valueTypeNotFound();
     }
 
-    return this;
+    const value = this.getValue();
+
+    this.getWitness();
+
+    this.assertInParentTree();
+    return value;
   }
 
   /**
-   * Asserts that the current value/witness are part of the
-   * on-chain `offchainStateRootHash` commitment.
-   *
-   * @returns this
+   * If the value type is not found, throw an error.
+   * Otherwise, get the witness and assert that the value
+   * is in the parent tree.
    */
-  public assertInOnChainTree(): this {
-    const offchainStateRootHash = this.contract.offchainStateRootHash.get();
-    this.contract.offchainStateRootHash.assertEquals(offchainStateRootHash);
-    this.assertInTree(offchainStateRootHash);
-    return this;
+  public assertNotExists() {
+    if (!this.valueType) {
+      throw errors.valueTypeNotFound();
+    }
+
+    this.getWitness();
+    this.assertInParentTree();
   }
 
   /**
-   * Sets the `offchainStateRootHash` on-chain state
+   * It returns the hash of the value used in the tree
    *
-   * @param rootHash Off-chain state root hash to be saved on-chain
-   * @returns this
+   * @returns The hash of the value
    */
-  public updateOnChainRootHash(rootHash?: Readonly<Field>): this {
-    const newOffchainStateRootHash = rootHash ?? this.getRootHash();
-    this.contract.offchainStateRootHash.set(newOffchainStateRootHash);
-    return this;
+  public get treeValue(): Field {
+    if (!this.valueType) {
+      throw errors.valueTypeNotFound();
+    }
+
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    if (!this.value) {
+      // default tree value, we need this for exists() to work correctly
+      return Field(0);
+    }
+
+    const valueFields = this.valueType.toFields(this.value);
+    return Poseidon.hash(valueFields);
   }
 
   /**
-   * Updates this.value and emits the field representation of it
-   * as a write event. It saves the value into the virtual storage,
-   * and updates the current witness to represent the updated value.
-   * Optionally, it also sets the on-chain root hash using the new witness.
+   * If the witness is not null, return the root and key of the parent tree.
    *
-   * @param value New MapValue to set
-   * @returns this
+   * @returns The root hash and key of the parent tree.
    */
-  public set(value: MapValue): this {
+  public getComputedParentRootHashAndKey(): [Field, Field] {
+    if (!this.witness) {
+      throw errors.witnessNotFound();
+    }
+
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    return this.witness.computeRootAndKey(this.treeValue) as [Field, Field];
+  }
+
+  /**
+   * "Check if the state's key and root hash are consistent with the
+   * parent's key and root hash."
+   *
+   * The function starts by checking if the state has a parent,
+   * a witness, and a key. If any of these are missing, it throws an error.
+   */
+  public assertInParentTree() {
+    if (!this.parent) {
+      throw errors.parentMapNotFound();
+    }
+
+    if (!this.witness) {
+      throw errors.rootHashNotFound();
+    }
+
+    if (!this.key) {
+      throw errors.keyNotFound();
+    }
+
+    // take the root hash of own parent
+    this.parent.getRootHash();
+    const parentRootHash = this.parent.rootHash?.value;
+
+    if (!parentRootHash) {
+      throw errors.parentMapNotFound();
+    }
+
+    // use own witness to compute the supposed parent root hash and key
+    const [computedParentRootHash, computedParentKey] =
+      this.getComputedParentRootHashAndKey();
+
+    // check if the computed root hash equals the existing parent root hash
+    parentRootHash.assertEquals(computedParentRootHash);
+
+    // check if the computed key equals the desired key
+    this.key.toField().assertEquals(computedParentKey);
+
+    // continue checking the state's parent
+    this.parent.assertInParentTree();
+  }
+
+  /**
+   * It takes the value, key and contract and emits an event
+   * that will be processed by the offchain storage
+   */
+  public emitSetEvent() {
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    if (!this.value) {
+      throw errors.valueNotFound();
+    }
+
+    if (!this.valueType) {
+      throw errors.valueTypeNotFound();
+    }
+
+    if (!this.key) {
+      throw errors.keyNotFound();
+    }
+
+    if (!this.contract) {
+      throw errors.contractNotFound();
+    }
+
+    if (!this.parent) {
+      throw errors.parentMapNotFound();
+    }
+
+    const valueFields = this.valueType.toFields(this.value);
+
+    // bunch of key hashes to indicate where the value
+    // should be written in offchain storage when processed
+    const path: Field[] = [this.key.toField(), ...this.parent.getPath()];
+    const pathLength = Field(path.length);
+
+    /**
+     * Protocol for events is: [pathLength, ...path, ...valueFields]
+     *
+     * pathLength: single Field describing how many fields does
+     * a path include
+     *
+     * path: multiple Fields, describing the path where the value
+     * should be written, the amount of path Fields is directly
+     * dependant on `pathLength`
+     *
+     * valueFields: Field[] representation of the value being set
+     */
+    const eventFields = [pathLength, ...path, ...valueFields];
+
+    /**
+     * Example event that writes
+     * [
+     *  // amount of path fields, in our case just 'root' -> 'keyOnRoot'
+     *  so this is 2
+     *  2,
+     *
+     *  // path, just two fields here
+     *  'root',
+     *  'keyOnRoot'
+     *
+     *  // after the path ends, field values to be stored under path come next
+     *  // some data structure serialized to fields, flattened to be part
+     *  // of the `eventFields`
+     *  1, // first field value
+     *  2, // second field value
+     *  3, // third field value
+     * ]
+     */
+
+    // emit events here
+    this.contract.self.body.events = Events.pushEvent(
+      this.contract.self.body.events,
+      eventFields
+    );
+  }
+
+  /**
+   * It sets the value of the current map entry,
+   * and then updates the parent map's root hash.
+   * It also emits a set event for the offchain storage.
+   *
+   * @param {ValueType} value - The value to be set.
+   * @returns The value that was set.
+   */
+  public set(value: ValueType): ValueType {
+    if (!this.parent?.mapName) {
+      throw errors.parentMapNotFound();
+    }
+
+    if (!this.key) {
+      throw errors.keyNotFound();
+    }
+
+    if (!this.contract?.virtualStorage) {
+      throw errors.virtualStorageNotFound();
+    }
+
+    if (!this.valueType) {
+      throw errors.valueTypeNotFound();
+    }
+
     this.value = value;
-    // eslint-disable-next-line max-len
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-explicit-any
-    this.contract.emitEvent(this.key.toString() as any, this.value);
 
-    // write the update to the virtual storage
-    const fields = this.valueType.toFields(this.value);
-
+    const valueFields = this.valueType.toFields(this.value);
     this.contract.virtualStorage.setValue(
       this.contract.address.toBase58(),
+      this.parent.mapName.toString(),
       this.key.toString(),
-      fields
+      valueFields
     );
+
     this.getWitness();
 
-    if (this.options.shouldUpdateRootHash ?? false) {
-      this.updateOnChainRootHash();
-    }
+    const [computedParentRootHash] = this.getComputedParentRootHashAndKey();
+    this.parent.setRootHash(computedParentRootHash);
 
-    return this;
-  }
+    this.emitSetEvent();
 
-  /**
-   * Computes a root hash from the current witness and value
-   * @returns Field rootHash
-   */
-  public getRootHash(): Field {
-    const [rootHash] = this.witness.computeRootAndKey(this.toTreeValueHash());
-    return rootHash;
+    return value;
   }
 }
 
 export default OffchainState;
-export type { OffchainStateOptions };

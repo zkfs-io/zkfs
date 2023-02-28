@@ -1,10 +1,13 @@
 /* eslint-disable new-cap */
 
 import type { VirtualStorage } from '@zkfs/virtual-storage';
-import { Field, method, SmartContract, State, state } from 'snarkyjs';
+import { Field, SmartContract, State, state } from 'snarkyjs';
+
+import OffchainStateMapRoot from './offchainStateMapRoot.js';
 
 /**
- * Class with utilities for offchain storage usage
+ * It's a smart contract that stores a single field, `offchainStateRootHash`,
+ * which is the root hash of the offchain storage state
  */
 class OffchainStateContract extends SmartContract {
   /**
@@ -19,8 +22,17 @@ class OffchainStateContract extends SmartContract {
     'zkfs:init': Field,
   };
 
-  public virtualStorage: VirtualStorage;
+  public virtualStorage?: VirtualStorage;
 
+  /* Way to access the offchain root state. */
+  public root: OffchainStateMapRoot = new OffchainStateMapRoot(this);
+
+  /**
+   * It returns an array of strings, which are the names of
+   * the offchain state keys
+   *
+   * @returns An array of strings.
+   */
   public analyzeOffchainStorage(): string[] {
     // eslint-disable-next-line max-len
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-unsafe-member-access
@@ -34,15 +46,6 @@ class OffchainStateContract extends SmartContract {
         | undefined) ?? [];
 
     return offchainStateKeys;
-  }
-
-  @method
-  public hydrateOffchainStateRootHash(
-    // eslint-disable-next-line max-len
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
-    offchainStateRootHash: Field
-  ) {
-    this.offchainStateRootHash.set(offchainStateRootHash);
   }
 }
 
