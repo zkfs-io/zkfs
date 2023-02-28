@@ -10,8 +10,14 @@ type ValueRecord = Record<string, string[] | undefined>;
  * updates during contract execution or event processing.
  */
 class VirtualStorage {
-  // address -> serialized map as string
-  public maps: { [key: string]: string | undefined } = {};
+  // address -> map name -> serialized map as string
+  public maps: {
+    [key: string]:
+      | {
+          [key: string]: string | undefined;
+        }
+      | undefined;
+  } = {};
 
   // address -> { key: value }
   public data: { [key: string]: ValueRecord | undefined } = {};
@@ -42,8 +48,10 @@ class VirtualStorage {
    * @param address
    * @param map new serialized map to store
    */
-  public setSerializedMap(address: string, map: string) {
-    this.maps[address] = map;
+  public setSerializedMap(address: string, mapName: string, map: string) {
+    const maps = this.maps[address] ?? {};
+    maps[mapName] = map;
+    this.maps[address] = maps;
   }
 
   /**
@@ -52,8 +60,11 @@ class VirtualStorage {
    * @param address
    * @returns string serialized map for the given address
    */
-  public getSerializedMap(address: string): string | undefined {
-    return this.maps[address];
+  public getSerializedMap(
+    address: string,
+    mapName: string
+  ): string | undefined {
+    return this.maps[address]?.[mapName];
   }
 
   /**
@@ -63,14 +74,18 @@ class VirtualStorage {
    * @param address
    * @returns MerkleMap SnarkyJS MerkleMap for the given address
    */
-  public getMap(address: string): MerkleMap {
-    const serializedMap = this.getSerializedMap(address);
+  public getMap(address: string, mapName: string): MerkleMap {
+    const serializedMap = this.getSerializedMap(address, mapName);
 
     if (serializedMap === undefined) {
       return new MerkleMap();
     }
 
     return deserializeMap(serializedMap);
+  }
+
+  public getCombinedKey(mapName: string, key: string): string {
+    return `${mapName}-${key}`;
   }
 
   /**
@@ -83,10 +98,12 @@ class VirtualStorage {
    */
   public getSerializedValue(
     address: string,
+    mapName: string,
     key: string
   ): string[] | undefined {
+    const combinedKey = this.getCombinedKey(mapName, key);
     const data = this.getSerializedData(address);
-    return data[key];
+    return data[combinedKey];
   }
 
   /**
@@ -96,8 +113,12 @@ class VirtualStorage {
    * @param key
    * @returns Field[]
    */
-  public getValue(address: string, key: string): Field[] | undefined {
-    const serializedValue = this.getSerializedValue(address, key);
+  public getValue(
+    address: string,
+    mapName: string,
+    key: string
+  ): Field[] | undefined {
+    const serializedValue = this.getSerializedValue(address, mapName, key);
     // eslint-disable-next-line new-cap
     return serializedValue?.map((partOfValue) => Field(partOfValue));
   }
@@ -110,8 +131,12 @@ class VirtualStorage {
    * @param key
    * @returns MerkleMapWitness
    */
-  public getWitness(address: string, key: string): MerkleMapWitness {
-    const map = this.getMap(address);
+  public getWitness(
+    address: string,
+    mapName: string,
+    key: string
+  ): MerkleMapWitness {
+    const map = this.getMap(address, mapName);
 
     // tree only stores hashed values, we can retrieve the witness by a key
     // eslint-disable-next-line new-cap
@@ -126,13 +151,15 @@ class VirtualStorage {
    * @param key
    * @param value
    */
+  // eslint-disable-next-line max-params
   public setSerializedValue(
     address: string,
+    mapName: string,
     key: string,
     value: string[]
   ): void {
     const data = this.getSerializedData(address);
-    const map = this.getMap(address);
+    const map = this.getMap(address, mapName);
 
     // store the hash of the value in the merkle tree
     // eslint-disable-next-line new-cap
@@ -141,12 +168,14 @@ class VirtualStorage {
 
     // eslint-disable-next-line new-cap
     map.set(Field(key), valueHash);
-    this.setSerializedMap(address, serializeMap(map));
+    this.setSerializedMap(address, mapName, serializeMap(map));
+
+    const combinedKey = this.getCombinedKey(mapName, key);
 
     // store the actual value as string-fields
     const newData: ValueRecord = {
       ...data,
-      [key]: value,
+      [combinedKey]: value,
     };
 
     this.setSerializedData(address, newData);
@@ -160,9 +189,15 @@ class VirtualStorage {
    * @param key
    * @param value
    */
-  public setValue(address: string, key: string, value: Field[]): void {
+  // eslint-disable-next-line max-params
+  public setValue(
+    address: string,
+    mapName: string,
+    key: string,
+    value: Field[]
+  ): void {
     const serializedValue = value.map((field) => field.toString());
-    this.setSerializedValue(address, key, serializedValue);
+    this.setSerializedValue(address, mapName, key, serializedValue);
   }
 
   /**
@@ -172,8 +207,8 @@ class VirtualStorage {
    * @param address
    * @returns string root hash of the map for the given address
    */
-  public getRoot(address: string): string | undefined {
-    const map = this.getMap(address);
+  public getRoot(address: string, mapName: string): string | undefined {
+    const map = this.getMap(address, mapName);
     return map.getRoot().toString();
   }
 }

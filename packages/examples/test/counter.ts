@@ -1,12 +1,12 @@
 import { method, UInt64 } from 'snarkyjs';
 import {
-  OffchainState,
   offchainState,
   OffchainStateContract,
+  OffchainState,
 } from '@zkfs/contract-api';
 
 class Counter extends OffchainStateContract {
-  @offchainState() public count = OffchainState.from<UInt64>(UInt64);
+  @offchainState() public count = OffchainState.fromRoot<UInt64>(UInt64);
 
   public init() {
     super.init();
@@ -15,7 +15,7 @@ class Counter extends OffchainStateContract {
 
   @method
   public update() {
-    const { value: currentCount } = this.count.get();
+    const currentCount = this.count.get();
     const newCount = currentCount.add(1);
     this.count.set(newCount);
   }

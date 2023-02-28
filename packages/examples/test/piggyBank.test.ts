@@ -3,13 +3,13 @@
 /* eslint-disable no-console */
 /* eslint-disable jest/require-top-level-describe */
 
-import { AccountUpdate, UInt64 } from 'snarkyjs';
+import { AccountUpdate, type PublicKey, UInt64 } from 'snarkyjs';
 
-import Counter from './counter.js';
+import PiggyBank from './piggyBank.js';
 import describeContract from './describeContract.js';
 
 // eslint-disable-next-line jest/require-hook
-describeContract<Counter>('counter', Counter, (context) => {
+describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
   async function localDeploy() {
     const {
       deployerAccount,
@@ -28,10 +28,11 @@ describeContract<Counter>('counter', Counter, (context) => {
     // this tx needs .sign(), because `deploy()` adds an account update
     // that requires signature authorization
     await tx.sign([deployerKey, zkAppPrivateKey]).send();
+
     return tx;
   }
 
-  it('correctly updates the count state on the `Counter` smart contract', async () => {
+  it('correctly deposits an amount for a user to the `PiggyBank` smart contract', async () => {
     expect.assertions(2);
 
     Error.stackTraceLimit = 1000;
@@ -40,55 +41,65 @@ describeContract<Counter>('counter', Counter, (context) => {
 
     const tx0 = await localDeploy();
 
-    console.log('Counter.deploy() successful, initial offchain state:', {
-      count: zkApp.count.get().value.toString(),
+    console.log('PiggyBank.deploy() successful, initial offchain state:', {
+      depositsRootHash: zkApp.deposits.getRootHash()?.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
       data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx0.toPretty(),
     });
 
-    console.log('Counter.update(), updating the offchain state...');
+    console.log('PiggyBank.initialDeposit(), updating the offchain state...');
 
     // update transaction
     const tx1 = await contractApi.transaction(zkApp, senderAccount, () => {
-      zkApp.update();
+      zkApp.initialDeposit(senderAccount, UInt64.from(10));
     });
 
     await tx1.prove();
     await tx1.sign([senderKey]).send();
 
-    // eslint-disable-next-line putout/putout
-    const { value: updatedCountOne } = zkApp.count.get();
+    const key = zkApp.getDepositKey(senderAccount);
+    const [currentDepositAmount] = zkApp.deposits.get<PublicKey, UInt64>(
+      UInt64,
+      key
+    );
 
-    expect(updatedCountOne.toString()).toStrictEqual(UInt64.from(1).toString());
+    expect(currentDepositAmount.toString()).toStrictEqual(
+      UInt64.from(10).toString()
+    );
 
-    console.log('Counter.update() successful, new offchain state:', {
-      count: updatedCountOne.toString(),
+    console.log('PiggyBank.initialDeposit() successful, new offchain state:', {
+      currentDepositAmount: currentDepositAmount.toString(),
+      depositsRootHash: zkApp.deposits.getRootHash()?.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
       data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx1.toPretty(),
     });
 
-    console.log(
-      'Counter.update() the second time, updating the offchain state...'
-    );
+    console.log('PiggyBank.deposit(), updating the offchain state...');
 
     // update transaction
     const tx2 = await contractApi.transaction(zkApp, senderAccount, () => {
-      zkApp.update();
+      zkApp.deposit(senderAccount, UInt64.from(10));
     });
 
     await tx2.prove();
     await tx2.sign([senderKey]).send();
 
-    const { value: updatedCountTwo } = zkApp.count.get();
+    const [currentUpdatedDepositAmount] = zkApp.deposits.get<PublicKey, UInt64>(
+      UInt64,
+      key
+    );
 
-    expect(updatedCountTwo.toString()).toStrictEqual(UInt64.from(2).toString());
+    expect(currentUpdatedDepositAmount.toString()).toStrictEqual(
+      UInt64.from(20).toString()
+    );
 
-    console.log('Counter.update() successful, new offchain state:', {
-      count: updatedCountTwo.toString(),
+    console.log('PiggyBank.deposit() successful, new offchain state:', {
+      currentUpdatedDepositAmount: currentUpdatedDepositAmount.toString(),
+      depositsRootHash: zkApp.deposits.getRootHash()?.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
       data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
