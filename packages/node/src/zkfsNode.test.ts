@@ -17,7 +17,7 @@ import type { ZkfsNodeConfig, ValueRecord } from './interface.js';
 
 describe('zkfsNode', () => {
   it('can set data on server database and get it on light client', async () => {
-    expect.assertions(5);
+    expect.assertions(8);
 
     // setup zkfs partial node
     const ipfsServer = await createIpfs(
@@ -50,6 +50,9 @@ describe('zkfsNode', () => {
 
     expect(mapFromPeer).toStrictEqual(serializedMap);
 
+    const undefinedMap = await peerNode.storage.getMap('unknownAddress');
+    expect(undefinedMap).toBeUndefined();
+
     const ipfsClient = await createIpfs(
       createIpfsConfigWithBootstrap('ipfs-light-client', [ipfsServerId])
     );
@@ -70,6 +73,12 @@ describe('zkfsNode', () => {
 
     expect(serializedMapFromClient).toStrictEqual(serializedMap);
 
+    const undefinedValueRecord = await peerNode.storage.getValues(
+      'unknownAccount',
+      ['valueHash']
+    );
+    expect(undefinedValueRecord).toBeUndefined();
+
     const valueRecord1: ValueRecord = { [`valueHash`]: ['value1', 'value2'] };
     await peerNode.storage.setValue('mina1', valueRecord1);
 
@@ -78,6 +87,12 @@ describe('zkfsNode', () => {
     ]);
 
     expect(valuesFromPeer).toStrictEqual(valueRecord1);
+
+    const incompleteValuesFromPeer = await peerNode.storage.getValues('mina1', [
+      'valueHash',
+      'unknownValueHash',
+    ]);
+    expect(Object.keys(incompleteValuesFromPeer!).length).toBe(1);
 
     const valueRecord2: ValueRecord = { [`valueHash2`]: ['value1', 'value2'] };
     await peerNode.storage.setValue('mina1', valueRecord2);

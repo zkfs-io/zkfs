@@ -14,11 +14,14 @@ interface StorageAdapter {
 
   initialize: () => Promise<void>;
 
-  getMap: (account: Address) => Promise<SerializedMerkleMap>;
-  getValues: (account: Address, keys: string[]) => Promise<ValueRecord>;
+  getMap: (account: Address) => Promise<SerializedMerkleMap | undefined>;
+  getValues: (
+    account: Address,
+    keys: string[]
+  ) => Promise<ValueRecord | undefined>;
 
   setMap: (account: Address, map: SerializedMerkleMap) => Promise<void>;
-  setValue: (account: Address, value: ValueRecord) => Promise<void>;
+  setValue: (account: Address, valueRecord: ValueRecord) => Promise<void>;
 }
 
 interface EventParserAdapter {}
@@ -32,6 +35,7 @@ interface ZkfsNode<Storage = StorageAdapter> {
   storage: Storage;
   services?: Service[];
   eventParser?: EventParserAdapter;
+  start: () => Promise<void>;
 }
 
 export type {
