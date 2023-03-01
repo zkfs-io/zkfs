@@ -218,7 +218,8 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
 
     // do not call .getMap because the implementation differs from parent
     const mapStore = this.getMapStore(account);
-    return mapStore.get('root');
+    // todo handle this case
+    return mapStore?.get('root');
   }
 
   /**
@@ -242,14 +243,15 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     // for each value record call this.setValue()
     await Promise.all(
       Object.entries(valueRecords).map(
-        async ([key, value]) => await store.set(key, JSON.stringify(value))
+        async ([key, value]) => await store?.set(key, JSON.stringify(value))
       )
     );
 
     // get all value records from db
     let valueRecordsFromStore: ValueRecord = {};
     Object.keys(valueRecords).forEach((key) => {
-      const value = store.get(key);
+      // store was created earlier
+      const value = store!.get(key);
       valueRecordsFromStore = {
         ...valueRecordsFromStore,
         [String(key)]: JSON.parse(value),

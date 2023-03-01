@@ -1,8 +1,10 @@
 import { Mina } from 'snarkyjs';
 import { VirtualStorage } from '@zkfs/virtual-storage';
 import cloneDeep from 'lodash/cloneDeep.js';
+import type { ZkfsNode } from '@zkfs/node';
 
 import type OffchainStateContract from './offchainStateContract.js';
+import { propertyKeyToField } from './offchainStateDecorator.js';
 
 // testing version bump
 
@@ -12,9 +14,29 @@ type Transaction = Awaited<ReturnType<typeof Mina.transaction>>;
 class ContractApi {
   public virtualStorage = new VirtualStorage();
 
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+  public constructor(public node: ZkfsNode) {}
+
   // eslint-disable-next-line max-len
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types, @typescript-eslint/require-await
   public async fetchOffchainState(contract: OffchainStateContract) {
+    const account = contract.address.toBase58();
+    const map = await this.node.storage.getMap(account);
+    if (map !== undefined) {
+      this.virtualStorage.setSerializedMap(account, map);
+    }
+
+    const keys = contract
+      .analyzeOffchainStorage()
+      .map((key) => propertyKeyToField(key).toString());
+
+    const values = await this.node.storage.getValues(account, keys);
+    if (values !== undefined) {
+      Object.entries(values).forEach(([key, value]) => {
+        this.virtualStorage.setSerializedValue(account, key, value);
+      });
+    }
+
     // eslint-disable-next-line no-param-reassign
     contract.virtualStorage = this.virtualStorage;
   }

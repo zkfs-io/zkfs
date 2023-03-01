@@ -82,3 +82,4 @@ function offchainState<MapValue>(options?: Readonly<OffchainStateOptions>) {
 }
 
 export default offchainState;
+export { propertyKeyToField };

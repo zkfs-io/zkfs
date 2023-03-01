@@ -50,11 +50,11 @@ class OrbitDbStoragePartial implements StorageAdapter {
     return `${this.databasePrefix}zkfs.value.${account}`;
   }
 
-  public getMapStore(account: Address) {
+  public getMapStore(account: Address): KeyValueStore<string> | undefined {
     return this.storeInstances[this.getZkfsMapPath(account)];
   }
 
-  public getValueStore(account: Address) {
+  public getValueStore(account: Address): KeyValueStore<string> | undefined {
     return this.storeInstances[this.getZkfsValuePath(account)];
   }
 
@@ -63,32 +63,35 @@ class OrbitDbStoragePartial implements StorageAdapter {
     valueRecord: ValueRecord
   ): Promise<void> {
     const [[key, value]] = Object.entries(valueRecord);
-
-    await this.getValueStore(account).set(key, JSON.stringify(value));
+    // todo check whether store exists before setting
+    // shouldn't be possible if store was not registered
+    await this.getValueStore(account)?.set(key, JSON.stringify(value));
   }
 
+  /**
+   * Get the value store for the given account, and if it exists,
+   * get the values for the given keys and return them as a ValueRecord.
+   *
+   * @param {Address} account - Address - The address of the account to get the values from
+   * @param {string[]} keys - string[] - An array of keys to get values for.
+   * @returns The values of the keys in the store.
+   */
   public async getValues(
     account: Address,
     keys: string[]
   ): Promise<ValueRecord | undefined> {
-    // eslint-disable-next-line promise/avoid-new
-    return await new Promise((resolve) => {
-      const store = this.getValueStore(account);
-      if (store === undefined) {
-        resolve(undefined);
-      } else {
-        let values: ValueRecord = {};
-        keys.forEach((key) => {
-          const value = store.get(key);
-          if (value === undefined) {
-            return;
-          } else {
-            values = { ...values, [String(key)]: JSON.parse(value) };
-          }
-        });
-        resolve(values);
+    const store = this.getValueStore(account);
+    if (store === undefined) {
+      return undefined;
+    }
+    const values: ValueRecord = {};
+    for (const key of keys) {
+      const value = store.get(key);
+      if (value !== undefined) {
+        values[String(key)] = JSON.parse(value);
       }
-    });
+    }
+    return Object.keys(values).length > 0 ? values : undefined;
   }
 
   public async getMap(account: Address): Promise<string | undefined> {
@@ -202,7 +205,9 @@ class OrbitDbStoragePartial implements StorageAdapter {
   }
 
   public async setMap(account: Address, map: string): Promise<void> {
-    await this.getMapStore(account).set('root', map);
+    // todo check whether store exists before setting
+    // shouldn't be possible if store was not registered
+    await this.getMapStore(account)?.set('root', map);
   }
 }
 
