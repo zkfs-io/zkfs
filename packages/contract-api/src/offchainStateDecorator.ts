@@ -1,36 +1,20 @@
-import { Field, Poseidon } from 'snarkyjs';
-
-// eslint-disable-next-line putout/putout
-import type OffchainState from './offchainState.js';
-// eslint-disable-next-line no-duplicate-imports
-import type { OffchainStateOptions } from './offchainState.js';
-
-function propertyKeyToField(propertyKey: string): Field {
-  /**
-   * Convert the `propertyKey` into an array of
-   * UTF-16 code points, which are then converted
-   * to Fields.
-   */
-  const keyFields = propertyKey
-    .split('')
-    .map((character) => character.codePointAt(0))
-    .filter((code): code is number => code !== undefined)
-    // eslint-disable-next-line new-cap
-    .map((code) => Field(code));
-
-  // compress the entire keyFields into a single hash
-  return Poseidon.hash(keyFields);
-}
+/* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
+import Key from './key.js';
+import OffchainState from './offchainState.js';
+import type OffchainStateContract from './offchainStateContract.js';
+import OffchainStateMap from './offchainStateMap.js';
 
 /**
- * Decorate the OffchainState instance with access to
- * the underelying SmartContract, for access to on-chain state
+ * It's a decorator that adds a property to a class,
+ * and that property is an instance of `OffchainState` or `OffchainStateMap`
+ *
+ * @returns A decorator function
  */
 // eslint-disable-next-line etc/no-misused-generics
-function offchainState<MapValue>(options?: Readonly<OffchainStateOptions>) {
-  return (target: object, propertyKey: string) => {
+function offchainState<MapValue>() {
+  return (target: OffchainStateContract, propertyKey: string) => {
     // eslint-disable-next-line @typescript-eslint/init-declarations
-    let value: OffchainState<MapValue> | undefined;
+    let value: OffchainState<unknown, MapValue> | OffchainStateMap | undefined;
 
     // update contract's metadata to include
     // the propertyKey of the decorated property
@@ -46,36 +30,45 @@ function offchainState<MapValue>(options?: Readonly<OffchainStateOptions>) {
       target.constructor
     );
 
-    // update the OffchainStorage class with values not available at
-    // the time of contract class definition
-    function get() {
-      if (value) {
-        // we call this here since we assume snarky `await isReady;` is finished
-        value.key = propertyKeyToField(propertyKey);
-        // eslint-disable-next-line max-len
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-invalid-this
+    Object.defineProperty(target, propertyKey, {
+      /**
+       * If the value is an OffchainState or OffchainStateMap,
+       * then set the key and contract properties of the value
+       * to the propertyKey and this, respectively.
+       *
+       * @returns The value of the property.
+       */
+      get() {
+        if (!value) {
+          return value;
+        }
+
+        if (value instanceof OffchainStateMap) {
+          // eslint-disable-next-line max-len
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+          value.mapName = Key.fromString(propertyKey) as Key<unknown>;
+        }
+
+        if (value instanceof OffchainState) {
+          // eslint-disable-next-line max-len
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+          value.key = Key.fromString(propertyKey) as Key<unknown>;
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         value.contract = this;
 
-        value.contract.events = {
-          ...value.contract.events,
-          // eslint-disable-next-line max-len
-          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-          [String(value.key.toString())]: value.valueType as any,
-        };
-      }
-      return value;
-    }
+        // eslint-disable-next-line max-len
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        value.parent = (this as OffchainStateContract).root;
 
-    Object.defineProperty(target, propertyKey, {
-      get,
+        // register an event here as well
 
-      // eslint-disable-next-line max-len
-      // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
-      set: (newValue: OffchainState<MapValue>) => {
+        return value;
+      },
+
+      set(newValue: OffchainState<unknown, MapValue> | OffchainStateMap) {
         value = newValue;
-        if (options) {
-          value.options = options;
-        }
       },
     });
   };

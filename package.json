@@ -52,6 +52,6 @@
     "lodash": "^4.17.21"
   },
   "stackblitz": {
-    "startCommand": "cd packages/examples && npm i @zkfs/contract-api@latest && cd ../.. && npx lerna run test:watch --scope=@zkfs/examples"
+    "startCommand": "cd packages/examples && npm i @zkfs/contract-api@latest && cd ../.. && npx lerna run test:counter --scope=@zkfs/examples"
   }
 }

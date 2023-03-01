@@ -12,10 +12,14 @@ import {
 } from 'snarkyjs';
 import { ContractApi } from '@zkfs/contract-api';
 import { ZkfsNode } from '@zkfs/node';
+/* eslint-disable jest/require-top-level-describe */
+
+import { AccountUpdate, UInt64 } from 'snarkyjs';
 
 import Counter from './counter.js';
 import PeerNodeHelper from './helpers/peerNode.js';
 import createLightClientConfig from './helpers/lightClient.js';
+import describeContract from './describeContract.js';
 
 const hasProofsEnabled = false;
 
@@ -57,17 +61,25 @@ describe('counter', () => {
     zkAppAddress = zkAppPrivateKey.toPublicKey();
     zkApp = new Counter(zkAppAddress);
 
-    // setup ZkfsNode light client
+    // setup zkfs node as light client
     const zkfsConfig = await createLightClientConfig(zkfsPeerNodeId);
     const lightClientNode = new ZkfsNode(zkfsConfig);
     await lightClientNode.start();
+
     contractApi = new ContractApi(lightClientNode);
 
     await peerNodeHelper.watchAddress(zkAppAddress.toBase58());
-    console.log('watching address', zkAppAddress.toBase58());
   });
 
   async function localDeploy() {
+    const {
+      deployerAccount,
+      deployerKey,
+      zkAppPrivateKey,
+      zkApp,
+      contractApi,
+    } = context();
+
     const tx = await contractApi.transaction(zkApp, deployerAccount, () => {
       AccountUpdate.fundNewAccount(deployerAccount);
       zkApp.deploy();
@@ -77,22 +89,55 @@ describe('counter', () => {
     // this tx needs .sign(), because `deploy()` adds an account update
     // that requires signature authorization
     await tx.sign([deployerKey, zkAppPrivateKey]).send();
+    return tx;
   }
 
   it('correctly updates the count state on the `Counter` smart contract', async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
-    await localDeploy();
+    Error.stackTraceLimit = 1000;
+
+    const { senderAccount, senderKey, zkApp, contractApi } = context();
+
+    const tx0 = await localDeploy();
 
     console.log('Counter.deploy() successful, initial offchain state:', {
       count: zkApp.count.get().value.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
+      data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      tx: tx0.toPretty(),
     });
 
     console.log('Counter.update(), updating the offchain state...');
 
     // update transaction
-    const tx = await contractApi.transaction(zkApp, senderAccount, () => {
+    const tx1 = await contractApi.transaction(zkApp, senderAccount, () => {
+      zkApp.update();
+    });
+
+    await tx1.prove();
+    await tx1.sign([senderKey]).send();
+
+    // eslint-disable-next-line putout/putout
+    const { value: updatedCountOne } = zkApp.count.get();
+
+    expect(updatedCountOne.toString()).toStrictEqual(UInt64.from(1).toString());
+
+    console.log('Counter.update() successful, new offchain state:', {
+      count: updatedCountOne.toString(),
+      offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
+      data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      tx: tx1.toPretty(),
+    });
+
+    console.log(
+      'Counter.update() the second time, updating the offchain state...'
+    );
+
+    // update transaction
+    const tx2 = await contractApi.transaction(zkApp, senderAccount, () => {
       zkApp.update();
     });
 

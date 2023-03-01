@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "strictNullChecks": true,
     "lib": [
       "es2020"
@@ -13,6 +14,9 @@
     "noImplicitAny": true,
     "allowJs": true,
     "esModuleInterop": true,
+    "strict": true,
+    "alwaysStrict": true,
+    "declarationMap": true
     "skipLibCheck": true
   }
 }
