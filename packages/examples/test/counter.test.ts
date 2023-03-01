@@ -11,8 +11,11 @@ import {
   UInt64,
 } from 'snarkyjs';
 import { ContractApi } from '@zkfs/contract-api';
+import { ZkfsNode } from '@zkfs/node';
 
 import Counter from './counter.js';
+import PeerNodeHelper from './helpers/peerNode.js';
+import createLightClientConfig from './helpers/lightClient.js';
 
 const hasProofsEnabled = false;
 
@@ -24,17 +27,21 @@ describe('counter', () => {
     zkAppAddress: PublicKey,
     zkAppPrivateKey: PrivateKey,
     zkApp: Counter,
-    contractApi: ContractApi;
+    contractApi: ContractApi,
+    zkfsPeerNodeId: string,
+    peerNodeHelper: PeerNodeHelper;
 
   beforeAll(async () => {
     await isReady;
+    peerNodeHelper = new PeerNodeHelper();
+    zkfsPeerNodeId = await peerNodeHelper.setup();
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (hasProofsEnabled) {
       await Counter.compile();
     }
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/naming-convention, new-cap
     const Local = Mina.LocalBlockchain({ proofsEnabled: hasProofsEnabled });
     Mina.setActiveInstance(Local);
@@ -49,7 +56,15 @@ describe('counter', () => {
     zkAppPrivateKey = PrivateKey.random();
     zkAppAddress = zkAppPrivateKey.toPublicKey();
     zkApp = new Counter(zkAppAddress);
-    contractApi = new ContractApi();
+
+    // setup ZkfsNode light client
+    const zkfsConfig = await createLightClientConfig(zkfsPeerNodeId);
+    const lightClientNode = new ZkfsNode(zkfsConfig);
+    await lightClientNode.start();
+    contractApi = new ContractApi(lightClientNode);
+
+    await peerNodeHelper.watchAddress(zkAppAddress.toBase58());
+    console.log('watching address', zkAppAddress.toBase58());
   });
 
   async function localDeploy() {
@@ -84,13 +99,20 @@ describe('counter', () => {
     await tx.prove();
     await tx.sign([senderKey]).send();
 
-    const { value: updatedCount } = zkApp.count.get();
+    // helper function for testing
+    await peerNodeHelper.mockEventParser(
+      zkApp.address.toBase58(),
+      contractApi.virtualStorage
+    );
 
+    await contractApi.fetchOffchainState(zkApp);
+
+    const { value: updatedCount } = zkApp.count.get();
     expect(updatedCount.toString()).toStrictEqual(UInt64.from(1).toString());
 
     console.log('Counter.update() successful, new offchain state:', {
       count: updatedCount.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
     });
-  });
+  }, 30_000);
 });
