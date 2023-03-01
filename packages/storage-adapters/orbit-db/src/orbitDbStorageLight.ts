@@ -80,12 +80,16 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
    * @returns The data from the pubsub message.
    */
   public getDataFromPubSubMessage(msg: Message) {
-    const decodedResponseMessage = new TextDecoder().decode(msg.data);
-    const { data } = responseValidation.verify(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      JSON.parse(decodedResponseMessage)
-    ).payload;
-    return data;
+    try {
+      const decodedResponseMessage = new TextDecoder().decode(msg.data);
+      const { data } = responseValidation.verify(
+        JSON.parse(decodedResponseMessage)
+      ).payload;
+      return data ?? undefined;
+    } catch (error) {
+      console.error('Error decoding orbit-db data provider response', error);
+      return undefined;
+    }
   }
 
   /**
@@ -95,9 +99,9 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
    * @param {Address} account - Address - The account address to get the map for
    * @returns A promise that resolves to a string.
    */
-  public override async getMap(account: Address): Promise<string> {
+  public override async getMap(account: Address): Promise<string | undefined> {
     // eslint-disable-next-line promise/avoid-new, no-async-promise-executor
-    return await new Promise<string>(async (resolve, reject) => {
+    return await new Promise<string | undefined>(async (resolve, reject) => {
       const timeoutId = setTimeout(() => {
         // eslint-disable-next-line prefer-promise-reject-errors
         reject(undefined);
@@ -106,20 +110,16 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
       // subscribe to response
       const onResponseHandler = async (msg: Message) => {
         clearTimeout(timeoutId);
-        try {
-          const data = this.getDataFromPubSubMessage(msg);
+
+        const data = this.getDataFromPubSubMessage(msg);
+        if (data === undefined) {
+          resolve(undefined);
+        } else {
           const map = await this.validateMapInLightClient(account, data);
           resolve(map);
-        } catch (error) {
-          // eslint-disable-next-line no-console
-          console.error(
-            'Error decoding orbit-db data provider request\n',
-            // eslint-disable-next-line max-len
-            // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-            (error as Error).message
-          );
         }
       };
+
       try {
         const id = uuidv4();
         // eslint-disable-next-line max-len
@@ -141,62 +141,61 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
   }
 
   /**
-   * It subscribes to a response topic, publishes a request to the request topic,
+   * It subscribes to a response topic, publishes a request to the topic,
    * and then waits for a response to the first topic.
    *
-   * @param {Address} account - Address - The account address to get the values for
+   * @param {Address} account - The account address to get the values for
    * @param {string[]} keys - All keys of ValueRecords that are requested
    * @returns A promise that resolves to a ValueRecord.
    */
   public override async getValues(
     account: Address,
     keys: string[]
-  ): Promise<ValueRecord> {
-    // eslint-disable-next-line promise/avoid-new, no-async-promise-executor
-    return await new Promise<ValueRecord>(async (resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        // eslint-disable-next-line prefer-promise-reject-errors
-        reject(undefined);
-      }, this.lightClientConfig.pubsub.timeout);
+  ): Promise<ValueRecord | undefined> {
+    // eslint-disable-next-line promise/avoid-new
+    return await new Promise<ValueRecord | undefined>(
+      // eslint-disable-next-line no-async-promise-executor
+      async (resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          // eslint-disable-next-line prefer-promise-reject-errors
+          reject(undefined);
+        }, this.lightClientConfig.pubsub.timeout);
 
-      // subscribe to response
-      const onResponseHandler = async (msg: Message) => {
-        clearTimeout(timeoutId);
-        try {
+        // subscribe to response
+        const onResponseHandler = async (msg: Message) => {
+          clearTimeout(timeoutId);
+
           const data = this.getDataFromPubSubMessage(msg);
-          const valueRecords = await this.validateValuesInLightClient(
-            account,
-            data
-          );
-          resolve(valueRecords);
-        } catch (error) {
-          // eslint-disable-next-line no-console
-          console.error(
-            'Error decoding orbit-db data provider request\n',
-            // eslint-disable-next-line max-len
-            // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-            (error as Error).message
-          );
-        }
-      };
-      try {
-        const id = uuidv4();
-        // eslint-disable-next-line max-len
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        await this.config.ipfs.pubsub.subscribe(
-          responseTopicPrefix + id,
-          onResponseHandler
-        );
+          if (data === undefined) {
+            resolve(undefined);
+          } else {
+            const valueRecords = await this.validateValuesInLightClient(
+              account,
+              data
+            );
+            resolve(valueRecords);
+          }
+        };
 
-        // publish request
-        const request = this.createGetValuesRequest(id, account, keys);
-        // eslint-disable-next-line max-len
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        await this.config.ipfs.pubsub.publish(requestTopic, request);
-      } catch (error) {
-        reject(error);
+        try {
+          const id = uuidv4();
+          // eslint-disable-next-line max-len
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+          await this.config.ipfs.pubsub.subscribe(
+            responseTopicPrefix + id,
+            onResponseHandler
+          );
+
+          // publish request
+          const request = this.createGetValuesRequest(id, account, keys);
+          // eslint-disable-next-line max-len
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+          await this.config.ipfs.pubsub.publish(requestTopic, request);
+        } catch (error) {
+          reject(error);
+        }
       }
-    });
+    );
   }
 
   /**
@@ -208,14 +207,17 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
    * @param map serialized merkle map
    * @returns serialized merkle map
    */
-  public async validateMapInLightClient(account: Address, map: string) {
+  public async validateMapInLightClient(
+    account: Address,
+    map: string
+  ): Promise<string | undefined> {
     await this.createMapStoreInstanceIfNotExisting(account);
 
     // set and retrieve from db store
     await this.setMap(account, map);
 
     // do not call .getMap because the implementation differs from parent
-    const mapStore = this.storeInstances[this.getZkfsMapPath(account)];
+    const mapStore = this.getMapStore(account);
     return mapStore.get('root');
   }
 
@@ -231,24 +233,22 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
   public async validateValuesInLightClient(
     account: Address,
     receivedValueRecords: string
-  ): Promise<ValueRecord> {
+  ): Promise<ValueRecord | undefined> {
     const valueRecords: ValueRecord = JSON.parse(receivedValueRecords);
     await this.createValueStoreInstanceIfNotExisting(account);
 
     const store = this.getValueStore(account);
 
     // for each value record call this.setValue()
-    const keys = Object.keys(valueRecords);
     await Promise.all(
-      keys.map(
-        async (key) =>
-          await store.set(key, JSON.stringify(valueRecords[String(key)]))
+      Object.entries(valueRecords).map(
+        async ([key, value]) => await store.set(key, JSON.stringify(value))
       )
     );
 
     // get all value records from db
     let valueRecordsFromStore: ValueRecord = {};
-    keys.forEach((key) => {
+    Object.keys(valueRecords).forEach((key) => {
       const value = store.get(key);
       valueRecordsFromStore = {
         ...valueRecordsFromStore,
@@ -260,30 +260,36 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
 
   /**
    * If the store instance for the account doesn't exist, create it
+   *
    * @param {Address} account - Address of the account that is being used to create the map store
    * instance.
    */
   public async createMapStoreInstanceIfNotExisting(account: Address) {
-    if (!this.storeInstances || !this.getValueStore(account)) {
-      const keyValueStore = await this.createGetMapDbStore(account);
-      this.saveStoreInstances([
-        { [this.getZkfsMapPath(account)]: keyValueStore },
-      ]);
+    if (this.storeInstances && this.getMapStore(account)) {
+      return;
     }
+
+    const keyValueStore = await this.createGetMapDbStore(account);
+    this.saveStoreInstances([
+      { [this.getZkfsMapPath(account)]: keyValueStore },
+    ]);
   }
 
   /**
-   * If the storeInstances object doesn't exist or the account's store doesn't exist, create a new
-   * store and save it to the storeInstances object
-   * @param {Address} account - Address of the account for which the value store is being created.
+   * If the storeInstances object doesn't exist or the account's store
+   * doesn't exist, create a new store and save it to the storeInstances object
+   *
+   * @param {Address} account - for which the value store is being created.
    */
   public async createValueStoreInstanceIfNotExisting(account: Address) {
-    if (!this.storeInstances || !this.getMapStore(account)) {
-      const keyValueStore = await this.createGetValueDbStore(account);
-      this.saveStoreInstances([
-        { [this.getZkfsValuePath(account)]: keyValueStore },
-      ]);
+    if (this.storeInstances && this.getValueStore(account)) {
+      return;
     }
+
+    const keyValueStore = await this.createGetValueDbStore(account);
+    this.saveStoreInstances([
+      { [this.getZkfsValuePath(account)]: keyValueStore },
+    ]);
   }
 
   /**

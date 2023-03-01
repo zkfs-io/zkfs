@@ -24,7 +24,7 @@ const responseTopicPrefix = 'zkfs:response-';
 /* Defining the response schema. */
 const responseSchema = Type.Object({
   payload: Type.Object({
-    data: Type.String(),
+    data: Type.Union([Type.String(), Type.Null()]),
   }),
 });
 type ResponseSchemaType = Static<typeof responseSchema>;

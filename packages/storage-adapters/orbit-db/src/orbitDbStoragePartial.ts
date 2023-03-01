@@ -58,36 +58,48 @@ class OrbitDbStoragePartial implements StorageAdapter {
     return this.storeInstances[this.getZkfsValuePath(account)];
   }
 
-  public async setValue(account: string, value: ValueRecord): Promise<void> {
-    const [key] = Object.keys(value);
+  public async setValue(
+    account: string,
+    valueRecord: ValueRecord
+  ): Promise<void> {
+    const [[key, value]] = Object.entries(valueRecord);
 
-    await this.getValueStore(account).set(
-      key,
-      JSON.stringify(value[String(key)])
-    );
+    await this.getValueStore(account).set(key, JSON.stringify(value));
   }
 
   public async getValues(
     account: Address,
     keys: string[]
-  ): Promise<ValueRecord> {
+  ): Promise<ValueRecord | undefined> {
     // eslint-disable-next-line promise/avoid-new
     return await new Promise((resolve) => {
       const store = this.getValueStore(account);
-      let values: ValueRecord = {};
-      keys.forEach((key) => {
-        const value = store.get(key);
-        values = { ...values, [String(key)]: JSON.parse(value) };
-      });
-      resolve(values);
+      if (store === undefined) {
+        resolve(undefined);
+      } else {
+        let values: ValueRecord = {};
+        keys.forEach((key) => {
+          const value = store.get(key);
+          if (value === undefined) {
+            return;
+          } else {
+            values = { ...values, [String(key)]: JSON.parse(value) };
+          }
+        });
+        resolve(values);
+      }
     });
   }
 
-  public async getMap(account: Address): Promise<string> {
+  public async getMap(account: Address): Promise<string | undefined> {
     // eslint-disable-next-line promise/avoid-new
     return await new Promise((resolve) => {
       const mapStore = this.getMapStore(account);
-      resolve(mapStore.get('root'));
+      if (mapStore === undefined) {
+        resolve(undefined);
+      } else {
+        resolve(mapStore.get('root'));
+      }
     });
   }
 
@@ -190,7 +202,7 @@ class OrbitDbStoragePartial implements StorageAdapter {
   }
 
   public async setMap(account: Address, map: string): Promise<void> {
-    await this.storeInstances[this.getZkfsMapPath(account)].set('root', map);
+    await this.getMapStore(account).set('root', map);
   }
 }
 

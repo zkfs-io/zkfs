@@ -30,34 +30,28 @@ class OrbitDbDataPubSub implements Service {
   public async initialize(
     zkfsNode: ZkfsNode<OrbitDbStoragePartial>
   ): Promise<void> {
-    // eslint-disable-next-line max-len
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    await zkfsNode.storage.config.ipfs.pubsub.subscribe(
-      requestTopic,
-      async (msg: Message) => {
-        const decodedString = new TextDecoder().decode(msg.data);
-        try {
-          const request = getMapRequestValidation.verify(
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-            JSON.parse(decodedString)
-          );
-          if (request.type === 'getMap' && request.payload.key === 'root') {
-            await this.handleGetMapRequest(zkfsNode, request);
-          }
-          if (request.type === 'getValues') {
-            await this.handleGetValuesRequest(zkfsNode, request);
-          }
-        } catch (error) {
-          // eslint-disable-next-line no-console
-          console.log(
-            'Error handling getMap for orbit-db data provider request\n',
-            // eslint-disable-next-line max-len
-            // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-            (error as Error).message
-          );
+    const handleRequest = async (msg: Message) => {
+      const decodedString = new TextDecoder().decode(msg.data);
+      try {
+        const request = getMapRequestValidation.verify(
+          JSON.parse(decodedString)
+        );
+        if (request.type === 'getMap' && request.payload.key === 'root') {
+          await this.handleGetMapRequest(zkfsNode, request);
         }
+        if (request.type === 'getValues') {
+          await this.handleGetValuesRequest(zkfsNode, request);
+        }
+      } catch (error) {
+        console.error(
+          'Error handling orbit-db data provider request:',
+          (error as Error).message
+        );
       }
-    );
+    };
+
+    const pubsub = zkfsNode.storage.config.ipfs.pubsub;
+    await pubsub.subscribe(requestTopic, handleRequest);
   }
 
   /**
@@ -70,17 +64,19 @@ class OrbitDbDataPubSub implements Service {
     zkfsNode: ZkfsNode<OrbitDbStoragePartial>,
     request: RequestSchemaType
   ) {
-    const data = await zkfsNode.storage.getMap(request.payload.account);
+    const { account } = request.payload;
+
+    const data = await zkfsNode.storage.getMap(account);
 
     const response: ResponseSchemaType = {
-      payload: { data },
+      payload: { data: data ?? null },
     };
-    // eslint-disable-next-line max-len
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    await zkfsNode.storage.config.ipfs.pubsub.publish(
-      responseTopicPrefix + request.id,
-      new TextEncoder().encode(JSON.stringify(response))
-    );
+
+    const message = JSON.stringify(response);
+    const encodedMessage = new TextEncoder().encode(message);
+
+    const topic = responseTopicPrefix + request.id;
+    await zkfsNode.storage.config.ipfs.pubsub.publish(topic, encodedMessage);
   }
 
   /**
@@ -93,20 +89,23 @@ class OrbitDbDataPubSub implements Service {
     zkfsNode: ZkfsNode<OrbitDbStoragePartial>,
     request: RequestSchemaType
   ) {
-    const data = await zkfsNode.storage.getValues(
-      request.payload.account,
-      JSON.parse(request.payload.key)
+    const { account, key: keys } = request.payload;
+
+    const valueRecords = await zkfsNode.storage.getValues(
+      account,
+      JSON.parse(keys)
     );
+    const data = valueRecords ? JSON.stringify(valueRecords) : null;
 
     const response: ResponseSchemaType = {
-      payload: { data: JSON.stringify(data) },
+      payload: { data },
     };
-    // eslint-disable-next-line max-len
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    await zkfsNode.storage.config.ipfs.pubsub.publish(
-      responseTopicPrefix + request.id,
-      new TextEncoder().encode(JSON.stringify(response))
-    );
+
+    const message = JSON.stringify(response);
+    const encodedMessage = new TextEncoder().encode(message);
+
+    const topic = responseTopicPrefix + request.id;
+    await zkfsNode.storage.config.ipfs.pubsub.publish(topic, encodedMessage);
   }
 }
 
