@@ -1,12 +1,12 @@
+/* eslint-disable lines-around-comment */
 import { Mina } from 'snarkyjs';
 import { VirtualStorage } from '@zkfs/virtual-storage';
 import cloneDeep from 'lodash/cloneDeep.js';
 import type { ZkfsNode } from '@zkfs/node';
+import type { OrbitDbStoragePartial } from '@zkfs/storage-orbit-db';
 
 import type OffchainStateContract from './offchainStateContract.js';
-import { propertyKeyToField } from './offchainStateDecorator.js';
-
-// testing version bump
+import Key from './key.js';
 
 // eslint-disable-next-line etc/no-deprecated
 type Transaction = Awaited<ReturnType<typeof Mina.transaction>>;
@@ -19,7 +19,7 @@ class ContractApi {
   public virtualStorage = new VirtualStorage();
 
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
-  public constructor(public node: ZkfsNode) {}
+  public constructor(public node: ZkfsNode<OrbitDbStoragePartial>) {}
 
   /**
    * It assigns the virtual storage of this contract to
@@ -28,23 +28,36 @@ class ContractApi {
    * @param {OffchainStateContract} contract
    * The contract object that is being called.
    */
-  // eslint-disable-next-line max-len
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types, @typescript-eslint/require-await
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   public async fetchOffchainState(contract: OffchainStateContract) {
+    const rootMapName = Key.fromString('root').toString();
+
     const account = contract.address.toBase58();
     const map = await this.node.storage.getMap(account);
     if (map !== undefined) {
-      this.virtualStorage.setSerializedMap(account, map);
+      this.virtualStorage.setSerializedMap(account, rootMapName, map);
     }
-
     const keys = contract
       .analyzeOffchainStorage()
-      .map((key) => propertyKeyToField(key).toString());
+      .map((key) =>
+        this.virtualStorage.getCombinedKey(
+          rootMapName,
+          Key.fromString(key).toString()
+        )
+      );
+
+    console.log('keys to be fetched', keys);
 
     const values = await this.node.storage.getValues(account, keys);
     if (values !== undefined) {
       Object.entries(values).forEach(([key, value]) => {
-        this.virtualStorage.setSerializedValue(account, key, value);
+        const [mapName, valueHash] = key.split('-');
+        this.virtualStorage.setSerializedValue(
+          account,
+          mapName,
+          valueHash,
+          value
+        );
       });
     }
 

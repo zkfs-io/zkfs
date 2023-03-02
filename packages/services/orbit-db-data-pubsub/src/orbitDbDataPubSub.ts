@@ -71,6 +71,7 @@ class OrbitDbDataPubSub implements Service {
     const response: ResponseSchemaType = {
       payload: { data: data ?? null },
     };
+    console.log('handling get map request', data ? 'much data' : 'undefined');
 
     const message = JSON.stringify(response);
     const encodedMessage = new TextEncoder().encode(message);
@@ -90,12 +91,14 @@ class OrbitDbDataPubSub implements Service {
     request: RequestSchemaType
   ) {
     const { account, key: keys } = request.payload;
-
+    console.log('get value request', request.payload);
     const valueRecords = await zkfsNode.storage.getValues(
       account,
       JSON.parse(keys)
     );
     const data = valueRecords ? JSON.stringify(valueRecords) : null;
+
+    console.log('handling get values response', data ?? 'undefined');
 
     const response: ResponseSchemaType = {
       payload: { data },

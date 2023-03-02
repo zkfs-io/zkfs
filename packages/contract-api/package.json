@@ -20,7 +20,8 @@
     "@types/lodash": "^4.14.191",
     "@zkfs/virtual-storage": "*",
     "snarkyjs": "^0.8.0",
-    "@zkfs/node": "*"
+    "@zkfs/node": "*",
+    "@zkfs/storage-orbit-db": "*"
   },
   "devDependencies": {
     "eslint": "^8.33.0"

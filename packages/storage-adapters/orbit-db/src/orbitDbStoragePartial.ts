@@ -63,6 +63,7 @@ class OrbitDbStoragePartial implements StorageAdapter {
     valueRecord: ValueRecord
   ): Promise<void> {
     const [[key, value]] = Object.entries(valueRecord);
+    console.log('setting value', valueRecord);
     // todo check whether store exists before setting
     // shouldn't be possible if store was not registered
     await this.getValueStore(account)?.set(key, JSON.stringify(value));
@@ -82,6 +83,7 @@ class OrbitDbStoragePartial implements StorageAdapter {
   ): Promise<ValueRecord | undefined> {
     const store = this.getValueStore(account);
     if (store === undefined) {
+      console.log('account not registered in DB');
       return undefined;
     }
     const values: ValueRecord = {};
@@ -99,6 +101,7 @@ class OrbitDbStoragePartial implements StorageAdapter {
     return await new Promise((resolve) => {
       const mapStore = this.getMapStore(account);
       if (mapStore === undefined) {
+        console.log('account not registered in DB');
         resolve(undefined);
       } else {
         resolve(mapStore.get('root'));

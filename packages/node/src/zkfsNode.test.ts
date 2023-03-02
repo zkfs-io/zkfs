@@ -32,11 +32,11 @@ describe('zkfsNode', () => {
       bootstrap: { interval: 1000, timeout: 15_000 },
     });
     const orbitDbDataPubSub = new OrbitDbDataPubSub();
-    const zkfsNodePartialConfig: ZkfsNodeConfig = {
+    const zkfsNodePartialConfig: ZkfsNodeConfig<OrbitDbStoragePartial> = {
       storage: storagePartial,
       services: [orbitDbDataPubSub],
     };
-    const peerNode = new ZkfsNode(zkfsNodePartialConfig);
+    const peerNode = ZkfsNode.withPartialStorage(zkfsNodePartialConfig);
     await peerNode.start();
 
     // for 3 addresses, there are 6 open stores (map+value)
@@ -61,10 +61,12 @@ describe('zkfsNode', () => {
       bootstrap: { interval: 1000, timeout: 15_000 },
       pubsub: { timeout: 10_000 },
     });
-    const zkfsNodeLightClientConfig: ZkfsNodeConfig = {
+    const zkfsNodeLightClientConfig: ZkfsNodeConfig<OrbitDbStorageLight> = {
       storage: storageLightClient,
     };
-    const lightClientNode = new ZkfsNode(zkfsNodeLightClientConfig);
+    const lightClientNode = ZkfsNode.withLightClient(
+      zkfsNodeLightClientConfig
+    );
     await lightClientNode.start();
 
     const serializedMapFromClient = await lightClientNode.storage.getMap(

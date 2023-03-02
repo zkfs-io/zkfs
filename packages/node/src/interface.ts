@@ -1,8 +1,4 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
-interface Service {
-  initialize: (zkfsNode: ZkfsNode) => Promise<void>;
-}
-
 type SerializedMerkleMap = string;
 
 // Mina account address as base58
@@ -26,12 +22,16 @@ interface StorageAdapter {
 
 interface EventParserAdapter {}
 
-interface ZkfsNodeConfig {
-  storage: StorageAdapter;
+interface ZkfsNodeConfig<Storage extends StorageAdapter> {
+  storage: Storage;
   services?: Service[];
 }
 
-interface ZkfsNode<Storage = StorageAdapter> {
+interface Service {
+  initialize: (zkfsNode: ZkfsNode<StorageAdapter>) => Promise<void>;
+}
+
+interface ZkfsNode<Storage extends StorageAdapter> {
   storage: Storage;
   services?: Service[];
   eventParser?: EventParserAdapter;
