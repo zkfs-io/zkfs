@@ -9,6 +9,9 @@ import { ZkfsNode } from '@zkfs/node';
 import { VirtualStorage } from '@zkfs/virtual-storage';
 import { defaultStorageOptions, ipfsPeerNodeConfig } from './config.js';
 
+const defaultRootMapName =
+  '26066477330778984202216424320685767887570180679420406880153508397309006440830';
+
 class PeerNodeHelper {
   public zkfsNode: ZkfsNodeGeneric<OrbitDbStoragePartial>;
 
@@ -19,7 +22,8 @@ class PeerNodeHelper {
    * @returns The peer id of the node.
    */
   public async setup(): Promise<string> {
-    const ipfsConfig = ipfsPeerNodeConfig('ipfs-partial-node');
+    const id = Math.floor(Math.random() * 10000);
+    const ipfsConfig = ipfsPeerNodeConfig(`ipfs-partial-node-${id}`);
     const ipfs = await createIpfs(ipfsConfig);
 
     const storagePartial = new OrbitDbStoragePartial({
@@ -74,22 +78,24 @@ class PeerNodeHelper {
     virtualStorage: VirtualStorage
   ) {
     // write new map
-    const serializedMap = virtualStorage.getSerializedMap(address);
+    const serializedMap = virtualStorage.getSerializedMap(
+      address,
+      defaultRootMapName
+    );
     if (serializedMap !== undefined) {
       await this.zkfsNode.storage.setMap(address, serializedMap);
     }
 
     // write new values
     const data = virtualStorage.getSerializedData(address);
-    await Promise.all(
-      Object.entries(data).map(async ([key, value]) => {
-        if (value !== undefined) {
-          await this.zkfsNode.storage.setValue(address, {
-            [String(key)]: value,
-          });
-        }
-      })
-    );
+    const setValuePromises = Object.entries(data).map(([key, value]) => {
+      if (value !== undefined) {
+        return this.zkfsNode.storage.setValue(address, {
+          [String(key)]: value,
+        });
+      }
+    });
+    await Promise.all(setValuePromises);
   }
 }
 

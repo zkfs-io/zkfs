@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { isReady, Mina, PrivateKey, type PublicKey } from 'snarkyjs';
 import { ContractApi, type OffchainStateContract } from '@zkfs/contract-api';
+import { ZkfsNode } from '@zkfs/node';
+
+import PeerNodeHelper from './helpers/peerNode.js';
+import createLightClientConfig from './helpers/lightClient.js';
 
 interface ContractTestContext<ZkApp extends OffchainStateContract> {
   deployerAccount: PublicKey;
@@ -11,6 +15,8 @@ interface ContractTestContext<ZkApp extends OffchainStateContract> {
   zkAppPrivateKey: PrivateKey;
   zkApp: ZkApp;
   contractApi: ContractApi;
+  peerNode: PeerNodeHelper;
+  mockEventParser: () => Promise<void>;
 }
 
 const hasProofsEnabled = false;
@@ -36,8 +42,14 @@ function describeContract<ZkApp extends OffchainStateContract>(
     : describe;
 
   describeFunction(name, () => {
+    let peerNode: PeerNodeHelper, peerId: string;
+
     beforeAll(async () => {
       await isReady;
+
+      peerNode = new PeerNodeHelper();
+      peerId = await peerNode.setup();
+
       // eslint-disable-next-line max-len
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, putout/putout
       if (hasProofsEnabled) {
@@ -48,7 +60,7 @@ function describeContract<ZkApp extends OffchainStateContract>(
     // eslint-disable-next-line @typescript-eslint/init-declarations
     let context: ContractTestContext<ZkApp>;
 
-    beforeEach(() => {
+    beforeEach(async () => {
       // eslint-disable-next-line new-cap
       const Local = Mina.LocalBlockchain({
         proofsEnabled: hasProofsEnabled,
@@ -70,7 +82,22 @@ function describeContract<ZkApp extends OffchainStateContract>(
       const zkAppAddress = zkAppPrivateKey.toPublicKey();
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       const zkApp = new Contract(zkAppAddress) as ZkApp;
-      const contractApi = new ContractApi();
+
+      await peerNode.watchAddress(zkApp.address.toBase58());
+
+      const lightClientConfig = await createLightClientConfig(peerId);
+      const lightClient = new ZkfsNode(lightClientConfig);
+      await lightClient.start();
+
+      const contractApi = new ContractApi(lightClient);
+
+      async function mockEventParser() {
+        const { virtualStorage: contractApiVirtualStorage } = contractApi;
+        await peerNode.mockEventParser(
+          zkAppAddress.toBase58(),
+          contractApiVirtualStorage
+        );
+      }
 
       context = {
         deployerAccount,
@@ -81,8 +108,10 @@ function describeContract<ZkApp extends OffchainStateContract>(
         zkAppAddress,
         zkAppPrivateKey,
         contractApi,
+        peerNode,
+        mockEventParser,
       };
-    });
+    }, 20_000);
 
     testCallback(() => context);
   });

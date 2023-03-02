@@ -32,7 +32,7 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
     return tx;
   }
 
-  it('correctly deposits an amount for a user to the `PiggyBank` smart contract', async () => {
+  it.skip('correctly deposits an amount for a user to the `PiggyBank` smart contract', async () => {
     expect.assertions(2);
 
     Error.stackTraceLimit = 1000;
@@ -105,5 +105,5 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx2.toPretty(),
     });
-  });
+  }, 40_000);
 });

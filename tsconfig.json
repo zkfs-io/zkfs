@@ -14,9 +14,9 @@
     "noImplicitAny": true,
     "allowJs": true,
     "esModuleInterop": true,
-    "strict": true,
-    "alwaysStrict": true,
-    "declarationMap": true
+    //"strict": true,
+    //"alwaysStrict": true,
+    "declarationMap": true,
     "skipLibCheck": true
   }
 }

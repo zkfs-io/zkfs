@@ -6,10 +6,11 @@
   "type": "module",
   "scripts": {
     "lint": "eslint ./test",
-    "test": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./test",
+    "test": "npm run test:clean && node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./test",
     "test:counter": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./test/counter.test.ts --forceExit",
     "test:ci": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./test",
-    "test:watch": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./test --watch"
+    "test:watch": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./test --watch",
+    "test:clean": "rm -rf ipfs-* orbitdb"
   },
   "main": "dist/index.js",
   "gitHead": "f9ab85515fd9a375db41e7d21cbe55ef023ecac7",
