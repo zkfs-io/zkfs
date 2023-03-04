@@ -7,6 +7,7 @@ import { create as createIpfs } from 'ipfs-core';
 import { OrbitDbDataPubSub } from '@zkfs/orbit-db-data-pubsub';
 import { ZkfsNode } from '@zkfs/node';
 import { VirtualStorage } from '@zkfs/virtual-storage';
+import { type OffchainStateContract, Key } from '@zkfs/contract-api';
 import { defaultStorageOptions, ipfsPeerNodeConfig } from './config.js';
 
 const defaultRootMapName =
@@ -33,7 +34,7 @@ class PeerNodeHelper {
     });
 
     const orbitDbDataPubSub = new OrbitDbDataPubSub();
-    const zkfsNodePartialConfig: ZkfsNodeConfig = {
+    const zkfsNodePartialConfig: ZkfsNodeConfig<OrbitDbStoragePartial> = {
       storage: storagePartial,
       services: [orbitDbDataPubSub],
     };
@@ -75,27 +76,36 @@ class PeerNodeHelper {
 
   public async mockEventParser(
     address: string,
-    virtualStorage: VirtualStorage
+    virtualStorage: VirtualStorage,
+    contract: OffchainStateContract
   ) {
     // write new map
-    const serializedMap = virtualStorage.getSerializedMap(
-      address,
-      defaultRootMapName
+
+    const mapsOrKeys = contract
+      .analyzeOffchainStorage()
+      .map((key) => Key.fromString(key).toString());
+    const mapNames = [defaultRootMapName, ...mapsOrKeys];
+    const serializedMaps = mapNames.map((mapName) =>
+      virtualStorage.getSerializedMap(address, mapName)
     );
-    if (serializedMap !== undefined) {
-      await this.zkfsNode.storage.setMap(address, serializedMap);
-    }
+    // const serializedMap = virtualStorage.getSerializedMap(
+    //   address,
+    //   defaultRootMapName
+    // );
+    // if (serializedMap !== undefined) {
+    //   await this.zkfsNode.storage.setMap(address, serializedMap);
+    // }
 
     // write new values
-    const data = virtualStorage.getSerializedData(address);
-    const setValuePromises = Object.entries(data).map(([key, value]) => {
-      if (value !== undefined) {
-        return this.zkfsNode.storage.setValue(address, {
-          [String(key)]: value,
-        });
-      }
-    });
-    await Promise.all(setValuePromises);
+    // const data = virtualStorage.getSerializedData(address);
+    // const setValuePromises = Object.entries(data).map(([key, value]) => {
+    //   if (value !== undefined) {
+    //     return this.zkfsNode.storage.setValue(address, {
+    //       [String(key)]: value,
+    //     });
+    //   }
+    // });
+    // await Promise.all(setValuePromises);
   }
 }
 

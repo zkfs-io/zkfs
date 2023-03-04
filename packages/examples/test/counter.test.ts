@@ -34,7 +34,7 @@ describeContract<Counter>('counter', Counter, (context) => {
     return tx;
   }
 
-  it.only('correctly updates the count state on the `Counter` smart contract', async () => {
+  it.skip('correctly updates the count state on the `Counter` smart contract', async () => {
     expect.assertions(2);
 
     const { senderAccount, senderKey, zkApp, contractApi, mockEventParser } =

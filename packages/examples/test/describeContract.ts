@@ -2,6 +2,7 @@
 import { isReady, Mina, PrivateKey, type PublicKey } from 'snarkyjs';
 import { ContractApi, type OffchainStateContract } from '@zkfs/contract-api';
 import { ZkfsNode } from '@zkfs/node';
+import type { OrbitDbStorageLight } from '@zkfs/storage-orbit-db';
 
 import PeerNodeHelper from './helpers/peerNode.js';
 import createLightClientConfig from './helpers/lightClient.js';
@@ -71,7 +72,7 @@ function describeContract<ZkApp extends OffchainStateContract>(
       await peerNode.watchAddress(zkApp.address.toBase58());
 
       const lightClientConfig = await createLightClientConfig(peerId);
-      const lightClient = new ZkfsNode(lightClientConfig);
+      const lightClient = new ZkfsNode<OrbitDbStorageLight>(lightClientConfig);
       await lightClient.start();
 
       const contractApi = new ContractApi(lightClient);
@@ -80,7 +81,8 @@ function describeContract<ZkApp extends OffchainStateContract>(
         const { virtualStorage: contractApiVirtualStorage } = contractApi;
         await peerNode.mockEventParser(
           zkAppAddress.toBase58(),
-          contractApiVirtualStorage
+          contractApiVirtualStorage,
+          zkApp
         );
       }
 

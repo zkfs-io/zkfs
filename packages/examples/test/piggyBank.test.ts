@@ -4,6 +4,7 @@
 /* eslint-disable jest/require-top-level-describe */
 
 import { AccountUpdate, type PublicKey, UInt64 } from 'snarkyjs';
+import { Key } from '@zkfs/contract-api';
 
 import PiggyBank from './piggyBank.js';
 import describeContract from './describeContract.js';
@@ -32,7 +33,7 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
     return tx;
   }
 
-  it.skip('correctly deposits an amount for a user to the `PiggyBank` smart contract', async () => {
+  it.only('correctly deposits an amount for a user to the `PiggyBank` smart contract', async () => {
     expect.assertions(2);
 
     Error.stackTraceLimit = 1000;
@@ -45,6 +46,9 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
       depositsRootHash: zkApp.deposits.getRootHash()?.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
       data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
+      maps: Object.keys(
+        zkApp.virtualStorage?.maps[zkApp.address.toBase58()] ?? {}
+      ),
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx0.toPretty(),
     });
@@ -52,9 +56,14 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
     console.log('PiggyBank.initialDeposit(), updating the offchain state...');
 
     // update transaction
-    const tx1 = await contractApi.transaction(zkApp, senderAccount, () => {
-      zkApp.initialDeposit(senderAccount, UInt64.from(10));
-    });
+    const tx1 = await contractApi.transaction(
+      zkApp,
+      senderAccount,
+      () => {
+        zkApp.initialDeposit(senderAccount, UInt64.from(10));
+      },
+      { maps: [zkApp.deposits] }
+    );
 
     await tx1.prove();
     await tx1.sign([senderKey]).send();
@@ -69,11 +78,31 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
       UInt64.from(10).toString()
     );
 
+    try {
+      const depositsMapName = zkApp.deposits.mapName ?? Key.fromString('');
+      console.log(
+        'depositsMapName',
+        depositsMapName.toString(),
+        'path from deposits',
+        zkApp.deposits.getPath().toString(),
+        'using get Map from offchainstate',
+        'map name is',
+        zkApp.deposits.getMap(depositsMapName).mapName?.toString(),
+        'path',
+        zkApp.deposits.getMap(depositsMapName).getPath().toString()
+      );
+    } catch (error) {
+      console.log(error);
+    }
+
     console.log('PiggyBank.initialDeposit() successful, new offchain state:', {
       currentDepositAmount: currentDepositAmount.toString(),
       depositsRootHash: zkApp.deposits.getRootHash()?.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
       data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
+      maps: Object.keys(
+        zkApp.virtualStorage?.maps[zkApp.address.toBase58()] ?? {}
+      ),
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx1.toPretty(),
     });
@@ -81,9 +110,14 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
     console.log('PiggyBank.deposit(), updating the offchain state...');
 
     // update transaction
-    const tx2 = await contractApi.transaction(zkApp, senderAccount, () => {
-      zkApp.deposit(senderAccount, UInt64.from(10));
-    });
+    const tx2 = await contractApi.transaction(
+      zkApp,
+      senderAccount,
+      () => {
+        zkApp.deposit(senderAccount, UInt64.from(10));
+      },
+      { maps: [zkApp.deposits] }
+    );
 
     await tx2.prove();
     await tx2.sign([senderKey]).send();
@@ -102,6 +136,9 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
       depositsRootHash: zkApp.deposits.getRootHash()?.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
       data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
+      maps: Object.keys(
+        zkApp.virtualStorage?.maps[zkApp.address.toBase58()] ?? {}
+      ),
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx2.toPretty(),
     });
