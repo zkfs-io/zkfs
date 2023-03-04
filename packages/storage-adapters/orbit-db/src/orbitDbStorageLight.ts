@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable @typescript-eslint/no-misused-promises */
@@ -309,6 +310,11 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
    * @returns A key value store.
    */
   public async createGetMapDbStore(account: Address) {
+    if (!this.orbitDb) {
+      throw new Error(
+        'OrbitDb instance undefined, have you called .initialized()?'
+      );
+    }
     const dbAddress = await this.getMapOrbitDbAddress(account);
     return await this.orbitDb.keyvalue<string>(dbAddress.toString());
   }
@@ -320,6 +326,11 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
    * @returns A key value store.
    */
   public async createGetValueDbStore(account: Address) {
+    if (!this.orbitDb) {
+      throw new Error(
+        'OrbitDb instance undefined, have you called .initialized()?'
+      );
+    }
     const dbAddress = await this.getMapOrbitDbAddress(account);
     return await this.orbitDb.keyvalue<string>(dbAddress.toString());
   }

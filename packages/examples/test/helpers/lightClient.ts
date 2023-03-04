@@ -6,8 +6,8 @@ import { ipfsLightClientConfig, defaultStorageOptions } from './config.js';
 
 async function createLightClientConfig(
   peerNodeId: string
-): Promise<ZkfsNodeConfig> {
-  const id = Math.floor(Math.random() * 10000);
+): Promise<ZkfsNodeConfig<OrbitDbStorageLight>> {
+  const id = Math.floor(Math.random() * 10_000);
   const ipfsConfig = ipfsLightClientConfig(
     `ipfs-light-client-${id}`,
     peerNodeId

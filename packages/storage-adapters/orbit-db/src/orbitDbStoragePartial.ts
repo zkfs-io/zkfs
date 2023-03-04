@@ -24,13 +24,15 @@ interface PartialPeersResult {
 }
 
 class OrbitDbStoragePartial implements StorageAdapter {
-  public storeInstances: Record<OrbitDbAddress, KeyValueStore<string>>;
+  public storeInstances:
+    | Record<OrbitDbAddress, KeyValueStore<string> | undefined>
+    | undefined;
 
-  public ipfsNode: IPFS;
+  public ipfsNode: IPFS | undefined;
 
   public databasePrefix = '';
 
-  public orbitDb: OrbitDB;
+  public orbitDb: OrbitDB | undefined;
 
   public constructor(public config: OrbitDbStoragePartialConfig) {}
 
@@ -51,11 +53,39 @@ class OrbitDbStoragePartial implements StorageAdapter {
   }
 
   public getMapStore(account: Address): KeyValueStore<string> | undefined {
-    return this.storeInstances[this.getZkfsMapPath(account)];
+    if (!this.storeInstances) {
+      console.error(
+        'Store instances not initialized, have you called .initialize()?'
+      );
+
+      return undefined;
+    }
+    const mapPath = this.getZkfsMapPath(account);
+    if (!this.storeInstances[mapPath]) {
+      console.error(
+        `Failed to fetch map store for unregistered account ${account}`
+      );
+      return undefined;
+    }
+    return this.storeInstances[mapPath];
   }
 
   public getValueStore(account: Address): KeyValueStore<string> | undefined {
-    return this.storeInstances[this.getZkfsValuePath(account)];
+    if (!this.storeInstances) {
+      console.error(
+        'Store instances not initialized, have you called .initialize()?'
+      );
+
+      return undefined;
+    }
+    const valuePath = this.getZkfsValuePath(account);
+    if (!this.storeInstances[valuePath]) {
+      console.error(
+        `Failed to fetch value store for unregistered account ${account}`
+      );
+      return undefined;
+    }
+    return this.storeInstances[valuePath];
   }
 
   public async setValue(
@@ -113,6 +143,11 @@ class OrbitDbStoragePartial implements StorageAdapter {
   }
 
   public async getMapOrbitDbAddress(account: Address) {
+    if (!this.orbitDb) {
+      throw new Error(
+        'OrbitDb instance undefined, have you called .initialized()?'
+      );
+    }
     return await this.orbitDb.determineAddress(
       this.getZkfsMapPath(account),
       'keyvalue'
@@ -138,10 +173,16 @@ class OrbitDbStoragePartial implements StorageAdapter {
   }
 
   public async createAndLoadValueStores(addresses: string[]) {
+    if (!this.orbitDb) {
+      throw new Error(
+        'OrbitDb instance undefined, have you called .initialized()?'
+      );
+    }
     return await Promise.all(
       addresses.map(async (address) => {
         const dbAddress = await this.getValueOrbitDbAddress(address);
-        const keyValueStore = await this.orbitDb.keyvalue<string>(
+        // TODO: remove forbidden non-null assertion
+        const keyValueStore = await this.orbitDb!.keyvalue<string>(
           dbAddress.toString()
         );
         await keyValueStore.load();
@@ -152,10 +193,15 @@ class OrbitDbStoragePartial implements StorageAdapter {
   }
 
   public async createAndLoadMapStores(addresses: Address[]) {
+    if (!this.orbitDb) {
+      throw new Error(
+        'OrbitDb instance undefined, have you called .initialized()?'
+      );
+    }
     return await Promise.all(
       addresses.map(async (address) => {
         const dbAddress = await this.getMapOrbitDbAddress(address);
-        const keyValueStore = await this.orbitDb.keyvalue<string>(
+        const keyValueStore = await this.orbitDb!.keyvalue<string>(
           dbAddress.toString()
         );
         await keyValueStore.load();
@@ -166,6 +212,11 @@ class OrbitDbStoragePartial implements StorageAdapter {
   }
 
   public async getValueOrbitDbAddress(account: Address) {
+    if (!this.orbitDb) {
+      throw new Error(
+        'OrbitDb instance undefined, have you called .initialized()?'
+      );
+    }
     return await this.orbitDb.determineAddress(
       this.getZkfsValuePath(account),
       'keyvalue'

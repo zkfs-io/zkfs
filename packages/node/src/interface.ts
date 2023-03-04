@@ -29,13 +29,13 @@ interface StorageAdapter {
 
 interface EventParserAdapter {}
 
+interface Service {
+  initialize: (zkfsNode: ZkfsNode<StorageAdapter>) => Promise<void>;
+}
+
 interface ZkfsNodeConfig<Storage extends StorageAdapter> {
   storage: Storage;
   services?: Service[];
-}
-
-interface Service {
-  initialize: (zkfsNode: ZkfsNode<StorageAdapter>) => Promise<void>;
 }
 
 interface ZkfsNode<Storage extends StorageAdapter> {

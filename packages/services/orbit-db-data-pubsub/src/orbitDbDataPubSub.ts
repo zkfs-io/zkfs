@@ -27,6 +27,8 @@ class OrbitDbDataPubSub implements Service {
    *
    * @param zkfsNode - ZkfsNode<OrbitDbStoragePartial>
    */
+  // TODO: make services generic
+  // @ts-expect-error
   public async initialize(
     zkfsNode: ZkfsNode<OrbitDbStoragePartial>
   ): Promise<void> {
