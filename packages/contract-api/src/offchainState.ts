@@ -2,15 +2,18 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable new-cap */
 /* eslint-disable max-statements */
-import { Field, MerkleMapWitness, Poseidon } from 'snarkyjs';
-
-// eslint-disable-next-line import/no-relative-packages
-import { Events } from '../../../node_modules/snarkyjs/dist/node/provable/transaction-leaves.js';
 import {
+  Field,
+  MerkleMapWitness,
+  Poseidon,
+  Bool,
   Circuit,
   type FlexibleProvablePure,
-  // eslint-disable-next-line import/no-relative-packages
-} from '../../../node_modules/snarkyjs/dist/node/lib/circuit_value.js';
+} from 'snarkyjs';
+
+// this needs to be removed once https://github.com/o1-labs/snarkyjs/issues/777 is fixed
+// eslint-disable-next-line import/no-relative-packages
+import { Events } from '../../../node_modules/snarkyjs/dist/node/provable/transaction-leaves.js';
 
 // eslint-disable-next-line import/no-cycle
 import OffchainStateMap from './offchainStateMap.js';
@@ -19,13 +22,16 @@ import type OffchainStateContract from './offchainStateContract.js';
 import errors from './errors.js';
 import type OffchainStateMapRoot from './offchainStateMapRoot.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-interface UpdateRootHashOptions {
+interface SetOptions {
   shouldEmitEvent: boolean;
 }
 
 /* `OffchainState` is a class that represents a value in a map */
 class OffchainState<KeyType, ValueType> {
+  public static defaultSetOptions: SetOptions = {
+    shouldEmitEvent: true,
+  };
+
   /**
    * "Create a new OffchainState object, and set
    * its parent, valueType, and key properties."
@@ -154,7 +160,7 @@ class OffchainState<KeyType, ValueType> {
    *
    * @returns The value of the key in the virtual storage.
    */
-  public getValue() {
+  public getValue(defaultValue?: ValueType): ValueType {
     if (!this.valueType) {
       throw errors.valueTypeNotFound();
     }
@@ -163,7 +169,13 @@ class OffchainState<KeyType, ValueType> {
       const valueFields = this.getValueFieldsFromVirtualStorage();
 
       if (!valueFields) {
-        throw errors.valueFieldsNotFound();
+        // eslint-disable-next-line max-len
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        if (!defaultValue) {
+          throw errors.valueFieldsNotFound();
+        }
+
+        return defaultValue;
       }
 
       if (!this.valueType) {
@@ -224,8 +236,41 @@ class OffchainState<KeyType, ValueType> {
 
     this.getWitness();
 
-    this.assertInParentTree();
+    this.assertIsInParentTree();
     return value;
+  }
+
+  public getOrDefault(defaultValue: ValueType): ValueType {
+    this.getWitness();
+    const exists = this.exists();
+
+    /**
+     * We have to provide a default value here, so that
+     * in a case where the value does not exist, we can
+     * still satisfy the underlying Circuit.witness with
+     * the appropriate value return
+     */
+    const value = this.getValue(defaultValue);
+    const isInParentTree = this.isInParentTree();
+
+    /**
+     * If the received value exists, check that it is
+     * a part of the parent tree. If it does not exist,
+     * we don't care if its part of the parent tree.
+     */
+    const isInParentTreeOrDefault = Circuit.if(
+      exists,
+      isInParentTree,
+      Bool(true)
+    );
+
+    isInParentTreeOrDefault.assertTrue();
+
+    return value;
+  }
+
+  public exists(): Bool {
+    return this.notExists().not();
   }
 
   /**
@@ -233,13 +278,22 @@ class OffchainState<KeyType, ValueType> {
    * Otherwise, get the witness and assert that the value
    * is in the parent tree.
    */
-  public assertNotExists() {
+  public notExists(): Bool {
     if (!this.valueType) {
       throw errors.valueTypeNotFound();
     }
 
     this.getWitness();
-    this.assertInParentTree();
+
+    return this.isInParentTree();
+  }
+
+  public assertExists() {
+    this.exists().assertTrue();
+  }
+
+  public assertNotExists() {
+    this.notExists().assertTrue();
   }
 
   /**
@@ -276,6 +330,11 @@ class OffchainState<KeyType, ValueType> {
     return this.witness.computeRootAndKey(this.treeValue) as [Field, Field];
   }
 
+  public assertIsInParentTree() {
+    const isInParentTree = this.isInParentTree();
+    isInParentTree.assertTrue();
+  }
+
   /**
    * "Check if the state's key and root hash are consistent with the
    * parent's key and root hash."
@@ -283,7 +342,7 @@ class OffchainState<KeyType, ValueType> {
    * The function starts by checking if the state has a parent,
    * a witness, and a key. If any of these are missing, it throws an error.
    */
-  public assertInParentTree() {
+  public isInParentTree(): Bool {
     if (!this.parent) {
       throw errors.parentMapNotFound();
     }
@@ -297,8 +356,7 @@ class OffchainState<KeyType, ValueType> {
     }
 
     // take the root hash of own parent
-    this.parent.getRootHash();
-    const parentRootHash = this.parent.rootHash?.value;
+    const parentRootHash = this.parent.getRootHash();
 
     if (!parentRootHash) {
       throw errors.parentMapNotFound();
@@ -309,13 +367,17 @@ class OffchainState<KeyType, ValueType> {
       this.getComputedParentRootHashAndKey();
 
     // check if the computed root hash equals the existing parent root hash
-    parentRootHash.assertEquals(computedParentRootHash);
+    const rootHashesEqual = parentRootHash.equals(computedParentRootHash);
 
     // check if the computed key equals the desired key
-    this.key.toField().assertEquals(computedParentKey);
+    const keysEqual = this.key.toField().equals(computedParentKey);
+
+    const isInParentTree = rootHashesEqual.and(keysEqual);
 
     // continue checking the state's parent
-    this.parent.assertInParentTree();
+    const parentIsInParentTree = this.parent.isInParentTree();
+
+    return isInParentTree.and(parentIsInParentTree);
   }
 
   /**
@@ -348,7 +410,7 @@ class OffchainState<KeyType, ValueType> {
 
     // bunch of key hashes to indicate where the value
     // should be written in offchain storage when processed
-    const path: Field[] = [this.key.toField(), ...this.parent.getPath()];
+    const path: Field[] = [...this.parent.getPath(), this.key.toField()];
     const pathLength = Field(path.length);
 
     /**
@@ -400,7 +462,10 @@ class OffchainState<KeyType, ValueType> {
    * @param {ValueType} value - The value to be set.
    * @returns The value that was set.
    */
-  public set(value: ValueType): ValueType {
+  public set(
+    value: ValueType,
+    { shouldEmitEvent }: SetOptions = OffchainState.defaultSetOptions
+  ): ValueType {
     if (!this.parent?.mapName) {
       throw errors.parentMapNotFound();
     }
@@ -429,10 +494,15 @@ class OffchainState<KeyType, ValueType> {
 
     this.getWitness();
 
-    const [computedParentRootHash] = this.getComputedParentRootHashAndKey();
+    const [computedParentRootHash, computedParentKey] =
+      this.getComputedParentRootHashAndKey();
+
+    this.key.toField().assertEquals(computedParentKey);
     this.parent.setRootHash(computedParentRootHash);
 
-    this.emitSetEvent();
+    if (this.contract.rollingStateOptions.shouldEmitEvents && shouldEmitEvent) {
+      this.emitSetEvent();
+    }
 
     return value;
   }

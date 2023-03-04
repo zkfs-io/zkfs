@@ -1,7 +1,6 @@
-/* eslint-disable lines-around-comment */
-import { Mina } from 'snarkyjs';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { type Field, Mina } from 'snarkyjs';
 import { VirtualStorage } from '@zkfs/virtual-storage';
-import cloneDeep from 'lodash/cloneDeep.js';
 import type { ZkfsNode } from '@zkfs/node';
 import type { OrbitDbStoragePartial } from '@zkfs/storage-orbit-db';
 
@@ -92,9 +91,23 @@ class ContractApi {
     await this.fetchOffchainState(contract);
 
     let iteration = 0;
-    let virtualStorageBackup = cloneDeep(this.virtualStorage);
+    let virtualStorageBackup = {
+      maps: JSON.stringify(this.virtualStorage.maps),
+      data: JSON.stringify(this.virtualStorage.data),
+    };
+    // eslint-disable-next-line @typescript-eslint/init-declarations
+    let offchainStateRootHashBackup: Field;
+
     const save = () => {
-      virtualStorageBackup = cloneDeep(this.virtualStorage);
+      virtualStorageBackup = {
+        maps: JSON.stringify(this.virtualStorage.maps),
+        data: JSON.stringify(this.virtualStorage.data),
+      };
+      try {
+        offchainStateRootHashBackup = contract.offchainStateRootHash.get();
+      } catch {
+        /* empty */
+      }
     };
 
     const restore = () => {
@@ -106,10 +119,32 @@ class ContractApi {
         return;
       }
 
-      this.virtualStorage = virtualStorageBackup;
+      const maps = JSON.parse(virtualStorageBackup.maps);
+      const data = JSON.parse(virtualStorageBackup.data);
+      this.virtualStorage.maps = maps;
+      this.virtualStorage.data = data;
+
       // eslint-disable-next-line no-param-reassign
       contract.virtualStorage = this.virtualStorage;
+
+      /**
+       * Handling backup of the onchain state is necessary,
+       * since calling .set within the same transaction does not actually
+       * set & write the value, so its not accessible in subsequent .get()
+       * callls on onchain @state()
+       *
+       * Therefore we manually setRootHash on the OffchainStateMapRoot,
+       * which is responsible for keeping the rolling root's root hash.
+       */
+      // eslint-disable-next-line max-len
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/strict-boolean-expressions
+      if (offchainStateRootHashBackup) {
+        contract.root.setRootHash(offchainStateRootHashBackup);
+      }
     };
+
+    // eslint-disable-next-line require-atomic-updates, no-param-reassign
+    contract.virtualStorage = this.virtualStorage;
 
     return await Mina.transaction(sender, () => {
       save();

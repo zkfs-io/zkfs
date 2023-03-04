@@ -1,6 +1,6 @@
 /* eslint-disable new-cap */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
-import { Field } from 'snarkyjs';
+import { Bool, type Field, MerkleMap } from 'snarkyjs';
 
 import errors from './errors.js';
 import Key from './key.js';
@@ -26,6 +26,15 @@ class OffchainStateMapRoot {
     shouldEmitAccountUpdate: true,
   };
 
+  public static get mapName(): Key<unknown> {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    return Key.fromString('root') as Key<unknown>;
+  }
+
+  public static get initialRootHash(): Field {
+    return new MerkleMap().getRoot();
+  }
+
   public parent?: OffchainStateMap;
 
   public rootHash?: OffchainState<unknown, Field>;
@@ -34,8 +43,7 @@ class OffchainStateMapRoot {
    * Name of the root map, hardcoded within this class as
    * a reasonable default.
    */
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  public mapName: Key<unknown> = Key.fromString('root') as Key<unknown>;
+  public mapName: Key<unknown> = OffchainStateMapRoot.mapName;
 
   public constructor(public contract: OffchainStateContract) {}
 
@@ -74,15 +82,19 @@ class OffchainStateMapRoot {
   public getOnChainRootHash(
     options: GetOnChainRootHashOptions = OffchainStateMapRoot.defaultGetOnChainRootHashOptions
   ) {
-    const rootHash = this.contract.offchainStateRootHash.get();
+    const rootHash =
+      this.rootHash?.value ?? this.contract.offchainStateRootHash.get();
 
     this.rootHash = OffchainState.fromValue<unknown, Field>(rootHash);
 
-    if (options.shouldEmitPrecondition) {
+    if (
+      options.shouldEmitPrecondition &&
+      this.contract.rollingStateOptions.shouldEmitPrecondition
+    ) {
       this.assertEqualsOnChainRootHash();
     }
 
-    return this.rootHash;
+    return rootHash;
   }
 
   /**
@@ -102,21 +114,12 @@ class OffchainStateMapRoot {
       this.rootHash.value = rootHash;
     }
 
-    if (options.shouldEmitAccountUpdate) {
+    if (
+      this.contract.rollingStateOptions.shouldEmitAccountUpdates &&
+      options.shouldEmitAccountUpdate
+    ) {
       this.setOnChainRootHash();
     }
-  }
-
-  /**
-   * `initializeRootHash` creates a new `OffchainState` object,
-   *  and sets its `contract` property to the `OffchainState` contract
-   * @returns A new OffchainState object with the value of 0.
-   */
-  public initializeRootHash() {
-    // construct the OffchainState using `this` as a parent
-    const rootHash = OffchainState.fromValue<unknown, Field>(Field(0));
-    rootHash.contract = this.contract;
-    return rootHash;
   }
 
   /**
@@ -124,14 +127,30 @@ class OffchainStateMapRoot {
    */
   public getRootHash() {
     this.getOnChainRootHash();
+
+    if (!this.rootHash?.value) {
+      throw errors.rootHashNotFound();
+    }
+
+    return this.rootHash.value;
   }
 
   /**
    * If the on-chain root hash is not equal to
    * the parent chain root hash, then throw an error.
    */
-  public assertInParentTree() {
-    this.assertEqualsOnChainRootHash();
+  public isInParentTree() {
+    if (!this.rootHash?.value) {
+      throw errors.rootHashNotFound();
+    }
+
+    /**
+     * Checking if the current root is in the parent tree
+     * happens at getRootHash() via a precondition.
+     * Therefore we can just assume that the root map
+     * is always in the parent tree.
+     */
+    return Bool(true);
   }
 
   /**

@@ -37,14 +37,17 @@ describeContract<Counter>('counter', Counter, (context) => {
   it.only('correctly updates the count state on the `Counter` smart contract', async () => {
     expect.assertions(2);
 
-    Error.stackTraceLimit = 1000;
-
     const { senderAccount, senderKey, zkApp, contractApi, mockEventParser } =
       context();
 
     const tx0 = await localDeploy();
 
     await contractApi.fetchOffchainState(zkApp);
+    console.log('after init data', {
+      data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
+      offchainStateData: zkApp.count.contract?.virtualStorage?.data,
+    });
+
     console.log('Counter.deploy() successful, initial offchain state:', {
       count: zkApp.count.get().value.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),

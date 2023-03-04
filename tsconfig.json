@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "strictNullChecks": true,
     "lib": [
       "es2020"
