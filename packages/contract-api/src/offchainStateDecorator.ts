@@ -60,7 +60,7 @@ function offchainState<MapValue>() {
 
         // eslint-disable-next-line max-len
         // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-        value.parent = (this as OffchainStateContract).root;
+        value.parent ??= (this as OffchainStateContract).root;
 
         // register an event here as well
 
