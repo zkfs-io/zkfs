@@ -96,7 +96,10 @@ class OrbitDbStoragePartial implements StorageAdapter {
     return Object.keys(values).length > 0 ? values : undefined;
   }
 
-  public async getMap(account: Address): Promise<string | undefined> {
+  public async getMap(
+    account: Address,
+    mapName: string
+  ): Promise<string | undefined> {
     // eslint-disable-next-line promise/avoid-new
     return await new Promise((resolve) => {
       const mapStore = this.getMapStore(account);
@@ -104,7 +107,7 @@ class OrbitDbStoragePartial implements StorageAdapter {
         console.log('account not registered in DB');
         resolve(undefined);
       } else {
-        resolve(mapStore.get('root'));
+        resolve(mapStore.get(mapName));
       }
     });
   }
@@ -207,10 +210,14 @@ class OrbitDbStoragePartial implements StorageAdapter {
     });
   }
 
-  public async setMap(account: Address, map: string): Promise<void> {
+  public async setMap(
+    account: Address,
+    map: string,
+    mapName: string
+  ): Promise<void> {
     // todo check whether store exists before setting
     // shouldn't be possible if store was not registered
-    await this.getMapStore(account)?.set('root', map);
+    await this.getMapStore(account)?.set(mapName, map);
   }
 }
 

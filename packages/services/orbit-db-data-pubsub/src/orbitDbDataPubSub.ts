@@ -64,9 +64,9 @@ class OrbitDbDataPubSub implements Service {
     zkfsNode: ZkfsNode<OrbitDbStoragePartial>,
     request: RequestSchemaType
   ) {
-    const { account } = request.payload;
+    const { account, key: mapName } = request.payload;
 
-    const data = await zkfsNode.storage.getMap(account);
+    const data = await zkfsNode.storage.getMap(account, mapName);
 
     const response: ResponseSchemaType = {
       payload: { data: data ?? null },

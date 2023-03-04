@@ -10,13 +10,20 @@ interface StorageAdapter {
 
   initialize: () => Promise<void>;
 
-  getMap: (account: Address) => Promise<SerializedMerkleMap | undefined>;
+  getMap: (
+    account: Address,
+    mapName: string
+  ) => Promise<SerializedMerkleMap | undefined>;
   getValues: (
     account: Address,
     keys: string[]
   ) => Promise<ValueRecord | undefined>;
 
-  setMap: (account: Address, map: SerializedMerkleMap) => Promise<void>;
+  setMap: (
+    account: Address,
+    map: SerializedMerkleMap,
+    mapName: string
+  ) => Promise<void>;
   setValue: (account: Address, valueRecord: ValueRecord) => Promise<void>;
 }
 

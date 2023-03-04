@@ -99,7 +99,10 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
    * @param {Address} account - Address - The account address to get the map for
    * @returns A promise that resolves to a string.
    */
-  public override async getMap(account: Address): Promise<string | undefined> {
+  public override async getMap(
+    account: Address,
+    mapName: string
+  ): Promise<string | undefined> {
     // eslint-disable-next-line promise/avoid-new, no-async-promise-executor
     return await new Promise<string | undefined>(async (resolve, reject) => {
       const timeoutId = setTimeout(() => {
@@ -115,7 +118,11 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
         if (data === undefined) {
           resolve(undefined);
         } else {
-          const map = await this.validateMapInLightClient(account, data);
+          const map = await this.validateMapInLightClient(
+            account,
+            data,
+            mapName
+          );
           resolve(map);
         }
       };
@@ -130,7 +137,7 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
         );
 
         // publish request
-        const request = this.createGetMapRequest(id, account, 'root');
+        const request = this.createGetMapRequest(id, account, mapName);
         // eslint-disable-next-line max-len
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
         await this.config.ipfs.pubsub.publish(requestTopic, request);
@@ -209,17 +216,18 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
    */
   public async validateMapInLightClient(
     account: Address,
-    map: string
+    map: string,
+    mapName: string
   ): Promise<string | undefined> {
     await this.createMapStoreInstanceIfNotExisting(account);
 
     // set and retrieve from db store
-    await this.setMap(account, map);
+    await this.setMap(account, map, mapName);
 
     // do not call .getMap because the implementation differs from parent
     const mapStore = this.getMapStore(account);
     // todo handle this case
-    return mapStore?.get('root');
+    return mapStore?.get(mapName);
   }
 
   /**
