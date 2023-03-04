@@ -7,7 +7,7 @@
     "project": ["./tsconfig.json", "./tsconfig.test.json"]
   },
 
-  "ignorePatterns": ["jest.config.cjs"],
+  "ignorePatterns": ["jest.config.cjs", "jest-stackblitz.config.cjs"],
   "rules": {
     "@typescript-eslint/quotes": [
       "error",
