@@ -16,10 +16,28 @@ class PiggyBank extends OffchainStateContract {
     this.deposits.setRootHash(OffchainStateMap.initialRootHash());
   }
 
+  /**
+   * It takes a public key and returns a key that can be used
+   * to retrieve the deposit of the public key
+   *
+   * @param {PublicKey} address - PublicKey
+   * The public key of the account that you want to get the deposit key for.
+   *
+   * @returns A Key<PublicKey>
+   */
   public getDepositKey(address: PublicKey): Key<PublicKey> {
     return Key.fromType<PublicKey>(PublicKey, address);
   }
 
+  /**
+   * Make sure there are no deposits for the 'to' address,
+   * then set the provided amount as the initial deposit.
+   *
+   * @param {PublicKey} to - PublicKey
+   * the public key of the account to deposit to
+   *
+   * @param {UInt64} amount - UInt64
+   */
   @method
   public initialDeposit(to: PublicKey, amount: UInt64) {
     const key = this.getDepositKey(to);
@@ -31,6 +49,16 @@ class PiggyBank extends OffchainStateContract {
     this.deposits.set<PublicKey, UInt64>(UInt64, key, amount);
   }
 
+  /**
+   * The function takes a public key and an amount as input,
+   * and adds the amount to the current deposit amount for the public key
+   *
+   * @param {PublicKey} to - PublicKey
+   * The public key of the account to deposit to
+   *
+   * @param {UInt64} amount - UInt64
+   * The amount of 'tokens' to deposit
+   */
   @method
   public deposit(to: PublicKey, amount: UInt64) {
     const key = this.getDepositKey(to);

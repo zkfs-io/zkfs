@@ -1,8 +1,5 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
-import { Field, Poseidon } from 'snarkyjs';
-
-// eslint-disable-next-line import/no-relative-packages
-import type { FlexibleProvablePure } from '../../../node_modules/snarkyjs/dist/node/lib/circuit_value.js';
+import { Field, Poseidon, type FlexibleProvablePure } from 'snarkyjs';
 
 /* `Key` is a class that represents a key in the circuit */
 class Key<KeyType> {
