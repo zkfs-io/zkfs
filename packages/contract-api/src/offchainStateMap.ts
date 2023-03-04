@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
-import { Field, Circuit, MerkleMap } from 'snarkyjs';
-
-// eslint-disable-next-line import/no-relative-packages
-import type { FlexibleProvablePure } from '../../../node_modules/snarkyjs/dist/node/lib/circuit_value.js';
+import {
+  Field,
+  Circuit,
+  MerkleMap,
+  type Bool,
+  type FlexibleProvablePure,
+} from 'snarkyjs';
 
 import errors from './errors.js';
 import type Key from './key.js';
@@ -10,11 +13,6 @@ import type Key from './key.js';
 import OffchainState from './offchainState.js';
 import type OffchainStateContract from './offchainStateContract.js';
 import type OffchainStateMapRoot from './offchainStateMapRoot.js';
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-interface GetOnChainRootHashOptions {
-  shouldEmitPrecondition: boolean;
-}
 
 /* `OffchainStateMap` is a class that represents a map of `OffchainState`s */
 class OffchainStateMap {
@@ -91,6 +89,7 @@ class OffchainStateMap {
   public getRootHash() {
     this.rootHash ??= this.initializeRootHash();
     this.rootHash.get();
+
     return this.rootHash.value;
   }
 
@@ -130,7 +129,12 @@ class OffchainStateMap {
       throw errors.parentMapNotFound();
     }
 
-    return [this.key.toField(), ...this.parent.getPath()];
+    return [...this.parent.getPath(), this.key.toField()];
+  }
+
+  public assertIsInParentTree() {
+    const isInParentTree = this.isInParentTree();
+    isInParentTree.assertTrue();
   }
 
   /**
@@ -140,7 +144,7 @@ class OffchainStateMap {
    *
    * @returns The rootHash's OffchainState is being returned.
    */
-  public assertInParentTree(): this {
+  public isInParentTree(): Bool {
     if (!this.rootHash) {
       throw errors.rootHashNotFound();
     }
@@ -151,12 +155,12 @@ class OffchainStateMap {
 
     // use the rootHash's OffchainState to assert
     // if the own rootHash is part of the parent tree
-    this.rootHash.assertInParentTree();
+    const rootHashIsInParentTree = this.rootHash.isInParentTree();
 
     // if there is a parent, continue asserting upwards
-    this.parent.assertInParentTree();
+    const parentIsInParentTree = this.parent.isInParentTree();
 
-    return this;
+    return rootHashIsInParentTree.and(parentIsInParentTree);
   }
 
   /**
@@ -190,6 +194,17 @@ class OffchainStateMap {
     return [value, state];
   }
 
+  public getOrDefault<KeyType, ValueType>(
+    valueType: FlexibleProvablePure<ValueType>,
+    key: Key<KeyType>,
+    defaultValue: ValueType
+  ): [ValueType, OffchainState<KeyType, ValueType>] {
+    const state = OffchainState.fromParent(this, valueType, key);
+    state.contract = this.contract;
+    const value = state.getOrDefault(defaultValue);
+    return [value, state];
+  }
+
   /**
    * This function sets the value of a key in the offchain state,
    * and returns the value and the offchain state.
@@ -218,9 +233,23 @@ class OffchainStateMap {
    * @param key - The key to the offchain state.
    */
   public assertNotExists<KeyType>(key: Key<KeyType>) {
+    this.notExists(key).assertTrue();
+  }
+
+  public assertExists<KeyType>(key: Key<KeyType>) {
+    this.exists(key).assertTrue();
+  }
+
+  public exists<KeyType>(key: Key<KeyType>): Bool {
     const state = OffchainState.fromParent(this, Field, key);
     state.contract = this.contract;
-    state.assertNotExists();
+    return state.exists();
+  }
+
+  public notExists<KeyType>(key: Key<KeyType>): Bool {
+    const state = OffchainState.fromParent(this, Field, key);
+    state.contract = this.contract;
+    return state.notExists();
   }
 }
 

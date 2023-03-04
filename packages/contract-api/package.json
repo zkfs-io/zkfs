@@ -18,10 +18,10 @@
   },
   "dependencies": {
     "@types/lodash": "^4.14.191",
-    "@zkfs/virtual-storage": "*",
-    "snarkyjs": "^0.8.0"
+    "@zkfs/virtual-storage": "*"
   },
   "devDependencies": {
-    "eslint": "^8.33.0"
+    "eslint": "^8.33.0",
+    "snarkyjs": "^0.9.2"
   }
 }

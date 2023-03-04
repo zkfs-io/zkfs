@@ -119,6 +119,7 @@ class VirtualStorage {
     key: string
   ): Field[] | undefined {
     const serializedValue = this.getSerializedValue(address, mapName, key);
+
     // eslint-disable-next-line new-cap
     return serializedValue?.map((partOfValue) => Field(partOfValue));
   }
