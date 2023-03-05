@@ -6,8 +6,7 @@
   "parserOptions": {
     "project": ["./tsconfig.json", "./tsconfig.test.json"]
   },
-
-  "ignorePatterns": ["jest.config.cjs", "jest-stackblitz.config.cjs"],
+  "ignorePatterns": ["jest.config.cjs", "jest-stackblitz.config.cjs", "docs/*"],
   "rules": {
     "@typescript-eslint/quotes": [
       "error",
