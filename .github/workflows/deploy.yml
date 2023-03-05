@@ -3,6 +3,9 @@ name: Deploy Docusaurus to GitHub Pages
 defaults:
   run:
     working-directory: docs
+    
+permissions:
+  contents: write
 
 on:
   push:
