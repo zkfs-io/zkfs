@@ -20,15 +20,16 @@ npm i --save @zkfs/contract-api@latest
 > ⚠️ ZKFS is currently being shipped as a development preview, containing a limited subset of features. As of now, you can use ZKFS in your test suite using @zkfs/contract-api@latest. Next step is to ship a UI development kit, with a fully fledged ZKFS node/peer.
 
 ```typescript
+
 import { method, UInt64 } from 'snarkyjs';
 import {
-  OffchainState,
   offchainState,
   OffchainStateContract,
+  OffchainState,
 } from '@zkfs/contract-api';
 
 class Counter extends OffchainStateContract {
-  @offchainState() public count = OffchainState.from<UInt64>(UInt64);
+  @offchainState() public count = OffchainState.fromRoot<UInt64>(UInt64);
 
   public init() {
     super.init();
@@ -37,13 +38,11 @@ class Counter extends OffchainStateContract {
 
   @method
   public update() {
-    const { value: currentCount } = this.count.get();
+    const currentCount = this.count.get();
     const newCount = currentCount.add(1);
     this.count.set(newCount);
   }
 }
-
-export default Counter;
 ```
 
 [![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/zkfs-io/zkfs?embed=1&file=packages/examples/test/counter.test.ts,packages/examples/test/counter.ts&hideExplorer=0&hideNavigation=0&theme=dark&view=editor)
