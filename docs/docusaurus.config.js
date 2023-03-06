@@ -52,6 +52,7 @@ const config = {
         },
         blog: {
           showReadingTime: true,
+
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           // editUrl:
@@ -95,7 +96,8 @@ const config = {
             position: 'left',
             label: 'Documentation (soon)',
           },
-          // { to: '/blog', label: 'Blog', position: 'left' },
+          /* A link to the blog. */
+          { to: '/blog', label: 'Blog', position: 'left' },
           {
             href: 'https://github.com/zkfs-io/zkfs/tree/develop/packages/examples/test',
             label: 'Examples',
@@ -103,6 +105,11 @@ const config = {
           {
             href: 'https://stackblitz.com/github/zkfs-io/zkfs?file=packages/examples/test/counter.test.ts,packages/examples/test/counter.ts&hideExplorer=1&hideNavigation=1&theme=dark&view=editor',
             label: 'Try online',
+          },
+          {
+            href: 'https://twitter.com/zkfs_io',
+            label: 'Twitter',
+            position: 'right',
           },
           {
             href: 'https://github.com/zkfs-io/zkfs',
@@ -120,19 +127,20 @@ const config = {
       footer: {
         style: 'dark',
         links: [
-          // {
-          //   title: 'Sitemap',
-          //   items: [
-          //     {
-          //       label: 'Documentation',
-          //       to: '/docs',                
-          //     },
-          //     {
-          //       label: 'Blog',
-          //       to: '/blog',
-          //     },
-          //   ],
-          // },
+          {
+            title: 'Sitemap',
+            items: [
+              /* A link to the documentation. */
+              // {
+              //   label: 'Documentation',
+              //   to: '/docs',                
+              // },
+              {
+                label: 'Blog',
+                to: '/blog',
+              },
+            ],
+          },
           {
             title: 'Community',
             items: [
