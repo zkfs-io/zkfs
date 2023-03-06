@@ -14,8 +14,11 @@
 # Quick start
 
 ```zsh
+// make sure to configure your build environment as described below
 npm i --save @zkfs/contract-api@latest
 ```
+
+🚨 **You will have to configure your build environment to resolve some of the relative imports temporarily used within ZKFS libraries, you can [find out how and why in this issue](https://github.com/zkfs-io/zkfs/issues/57).**
 
 > ⚠️ ZKFS is currently being shipped as a development preview, containing a limited subset of features. As of now, you can use ZKFS in your test suite using @zkfs/contract-api@latest. Next step is to ship a UI development kit, with a fully fledged ZKFS node/peer.
 
