@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocs=self.webpackChunkdocs||[]).push([[535],{5641:a=>{a.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"Introducing ZKFS, Mina\'s native data availability layer","permalink":"/blog/introducing-zkfs-mina-data-availability-layer"}]}')}}]);
