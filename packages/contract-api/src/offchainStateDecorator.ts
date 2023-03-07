@@ -58,7 +58,7 @@ function offchainState() {
 
       value.contract = self;
 
-      value.parent = (self as OffchainStateContract).root;
+      value.parent ??= (self as OffchainStateContract).root;
 
       return value;
     }

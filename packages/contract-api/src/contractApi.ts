@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { type Field, Mina } from 'snarkyjs';
 import { VirtualStorage } from '@zkfs/virtual-storage';
+import type { ZkfsNode } from '@zkfs/node';
+import type { OrbitDbStoragePartial } from '@zkfs/storage-orbit-db';
 
 import type OffchainStateContract from './offchainStateContract.js';
-
-// testing version bump
+import Key from './key.js';
+import OffchainStateMap from './offchainStateMap.js';
 
 // eslint-disable-next-line etc/no-deprecated
 type Transaction = Awaited<ReturnType<typeof Mina.transaction>>;
@@ -16,6 +18,9 @@ type Transaction = Awaited<ReturnType<typeof Mina.transaction>>;
 class ContractApi {
   public virtualStorage = new VirtualStorage();
 
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+  public constructor(public node: ZkfsNode<OrbitDbStoragePartial>) {}
+
   /**
    * It assigns the virtual storage of this contract to
    * the provided contract's virtual storage property
@@ -23,9 +28,58 @@ class ContractApi {
    * @param {OffchainStateContract} contract
    * The contract object that is being called.
    */
-  // eslint-disable-next-line max-len
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types, @typescript-eslint/require-await
-  public async fetchOffchainState(contract: OffchainStateContract) {
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+  public async fetchOffchainState(
+    contract: OffchainStateContract,
+    maps?: OffchainStateMap[]
+  ) {
+    // fetch maps
+    const rootMapName = Key.fromString('root').toString();
+    console.log('rootMapName', rootMapName);
+    maps?.forEach((map) => {
+      console.log(
+        'fetching map for provided offchain',
+        map.getPath().toString()
+      );
+    });
+
+    let mapsToFetch = [rootMapName];
+    // assume all keys from offchain storage can be a map
+    const possibleMapsFromOffchainStorage = contract
+      .analyzeOffchainStorage()
+      .map((key) => Key.fromString(key).toString());
+    mapsToFetch = [...mapsToFetch, ...possibleMapsFromOffchainStorage];
+    // const account = contract.address.toBase58();
+    // const map = await this.node.storage.getMap(account);
+    // if (map !== undefined) {
+    //   this.virtualStorage.setSerializedMap(account, rootMapName, map);
+    // }
+    const keys = contract
+      .analyzeOffchainStorage()
+      .map((key) =>
+        this.virtualStorage.getCombinedKey(
+          rootMapName,
+          Key.fromString(key).toString()
+        )
+      );
+    console.log('keys', keys);
+
+    // console.log('keys to be fetched', keys);
+
+    // const values = await this.node.storage.getValues(account, keys);
+    // if (values !== undefined) {
+    //   Object.entries(values).forEach(([key, value]) => {
+    //     const [mapName, valueHash] = key.split('-');
+    //     this.virtualStorage.setSerializedValue(
+    //       account,
+    //       mapName,
+    //       valueHash,
+    //       value
+    //     );
+    //   });
+    // }
+    const depositsMapName = Key.fromString('deposits').toString();
+    console.log('depositsMapName', depositsMapName);
     // eslint-disable-next-line no-param-reassign
     contract.virtualStorage = this.virtualStorage;
   }
@@ -52,9 +106,11 @@ class ContractApi {
     // eslint-disable-next-line max-len
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     sender: Mina.FeePayerSpec,
-    transactionCallback: () => void
+    transactionCallback: () => void,
+    options?: { maps: OffchainStateMap[] }
   ): Promise<Transaction> {
-    await this.fetchOffchainState(contract);
+    console.log('options');
+    await this.fetchOffchainState(contract, options?.maps);
 
     let iteration = 0;
     let virtualStorageBackup = {
