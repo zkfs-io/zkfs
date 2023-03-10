@@ -264,7 +264,13 @@ class OffchainState<KeyType, ValueType> {
       Bool(true)
     );
 
-    isInParentTreeOrDefault.assertTrue();
+    isInParentTreeOrDefault.assertTrue(
+      `OffchainState with key ${
+        this.key?.toString() ?? '<no key provided>'
+      } is not in parent tree ${
+        this.parent?.mapName?.toString() ?? '<no map name provided>'
+      }`
+    );
 
     return value;
   }
