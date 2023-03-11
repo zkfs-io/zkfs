@@ -1,9 +1,12 @@
+/* eslint-disable lines-around-comment */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable new-cap */
 
 import type { VirtualStorage } from '@zkfs/virtual-storage';
 import { Field, SmartContract, State, state } from 'snarkyjs';
+import errors from './errors.js';
 
+import type OffchainState from './offchainState.js';
 import OffchainStateMapRoot from './offchainStateMapRoot.js';
 
 interface RollingStateOptions {
@@ -32,6 +35,31 @@ class OffchainStateContract extends SmartContract {
     shouldEmitPrecondition: true,
     shouldEmitEvents: true,
   };
+
+  public lastUpdatedOffchainState?: Record<
+    // map name
+    string,
+    // instance of the last updated offchain state on that map
+    OffchainState<unknown, unknown> | undefined
+  >;
+
+  public resetLastUpdatedOffchainState() {
+    this.lastUpdatedOffchainState = undefined;
+  }
+
+  public getLastUpdatedOffchainState(
+    mapName: string
+  ): OffchainState<unknown, unknown> | undefined {
+    return this.lastUpdatedOffchainState?.[mapName];
+  }
+
+  public setLastUpdatedOffchainState(
+    mapName: string,
+    lastUpdatedOffchainState: OffchainState<unknown, unknown>
+  ) {
+    this.lastUpdatedOffchainState ??= {};
+    this.lastUpdatedOffchainState[mapName] = lastUpdatedOffchainState;
+  }
 
   public setRollingStateOptions(options: Partial<RollingStateOptions>) {
     this.rollingStateOptions = {

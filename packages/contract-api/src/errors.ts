@@ -12,6 +12,9 @@ const errors = {
   virtualStorageNotFound: () => new Error('Virtual storage not found'),
   parentMapNotFound: () => new Error('Parent map not found'),
   witnessNotFound: () => new Error('Witness not found'),
+
+  lastUpdatedOffchainStateNotFound: () =>
+    new Error('Last updated offchain state was not found'),
 };
 
 export default errors;

@@ -76,6 +76,7 @@ class ContractApi {
       }
     };
 
+    // eslint-disable-next-line max-statements
     const restore = () => {
       iteration += 1;
 
@@ -107,6 +108,9 @@ class ContractApi {
       if (offchainStateRootHashBackup) {
         contract.root.setRootHash(offchainStateRootHashBackup);
       }
+
+      // eslint-disable-next-line no-param-reassign
+      contract.lastUpdatedOffchainState = {};
     };
 
     // eslint-disable-next-line require-atomic-updates, no-param-reassign

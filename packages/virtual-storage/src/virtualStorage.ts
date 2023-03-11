@@ -22,6 +22,8 @@ class VirtualStorage {
   // address -> { key: value }
   public data: { [key: string]: ValueRecord | undefined } = {};
 
+  public witnesses: { [key: string]: ValueRecord | undefined } = {};
+
   /**
    * Returns stored data for the given address
    *
