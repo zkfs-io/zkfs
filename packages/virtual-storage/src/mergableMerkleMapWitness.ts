@@ -42,49 +42,66 @@ declare class BaseMerkleWitness extends CircuitValue {
   calculateIndex(): Field;
 }
 
+function sharedDepthTopToBottom(ownPath: Bool[], otherPath: Bool[]) {
+  if (ownPath.length !== otherPath.length) {
+    throw new Error('Both paths need to be of same length');
+  }
+
+  const reversedOwnPath = ownPath.slice().reverse();
+  const reversedOtherPath = otherPath.slice().reverse();
+
+  const { length } = ownPath;
+
+  for (let index = 0; index < length; index++) {
+    const ownValue = reversedOwnPath[index].toBoolean();
+    const otherValue = reversedOtherPath[index].toBoolean();
+
+    if (ownValue !== otherValue) {
+      return index;
+    }
+  }
+
+  return length;
+}
+
 const bits = 255;
 class MergableMerkleWitness extends MerkleWitness(bits + 1) {
-  // TODO: add merge to the prototype of the class we want to extend from snarkyjs, so that we dont have to fork snarky / make a PR
   merge(leaf: Field, other: BaseMerkleWitness): Witness {
     const otherHeight = other.height();
     if (this.height() !== otherHeight) {
       throw Error('witnesses of different height are not mergable');
     }
+    const sharedDepth = sharedDepthTopToBottom(this.isLeft, other.isLeft);
 
-    const index = Number(this.calculateIndex().toString());
-    const otherIndex = Number(other.calculateIndex().toString());
-
-    let levelWithDivergance: number = 0;
-    let x = 2 ** (this.height() - 1) / 2;
-    for (let i = 1; i < this.height(); i++) {
-      const bothUpperHalf = index > x && otherIndex > x;
-      const bothLowerHalf = index <= x && otherIndex <= x;
-
-      if (bothUpperHalf) {
-        x = x + x / 2;
-      } else if (bothLowerHalf) {
-        x = x / 2;
-      } else {
-        levelWithDivergance = this.height() - i;
-      }
-    }
-
-    // calculate hash just a bit...
-    let hash = leaf;
-    for (let i = 0; i < levelWithDivergance; ++i) {
-      const left = Circuit.if(other.isLeft[i], hash, other.path[i]);
-      const right = Circuit.if(other.isLeft[i], other.path[i], hash);
-      hash = Poseidon.hash([left, right]);
-    }
-
-    const newWitness: Witness = this.isLeft.map((isLeft, i) => {
+    const witness: Witness = this.isLeft.map((isLeft, i) => {
       return {
         isLeft: isLeft.toBoolean(),
         sibling: this.path[i],
       };
     });
-    newWitness[levelWithDivergance].sibling = hash;
-    return newWitness;
+
+    if (sharedDepth === this.path.length) {
+      return witness;
+    }
+
+    console.log('sharedDepth', sharedDepth);
+    const replaceAtIndex = this.isLeft.length - sharedDepth - 1;
+
+    let hash = leaf;
+    // rebuild by hashing bottom to top in other path
+    for (let level = 0; level < replaceAtIndex; level++) {
+      const isLeft = other.isLeft[level].toBoolean();
+
+      const left = isLeft ? hash : other.path[level];
+      const right = isLeft ? other.path[level] : hash;
+
+      hash = Poseidon.hash([left, right]);
+    }
+
+    
+    witness[replaceAtIndex].sibling = hash; 
+
+    return witness;
   }
 }
 
