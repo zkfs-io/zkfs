@@ -1,5 +1,11 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
-import { Poseidon, Field, MerkleMap, type MerkleMapWitness } from 'snarkyjs';
+import {
+  Poseidon,
+  Field,
+  MerkleMap,
+  type MerkleMapWitness,
+  Circuit,
+} from 'snarkyjs';
 
 import { serializeMap, deserializeMap } from './mapUtils.js';
 
@@ -22,7 +28,7 @@ class VirtualStorage {
   // address -> { key: value }
   public data: { [key: string]: ValueRecord | undefined } = {};
 
-  public witnesses: { [key: string]: ValueRecord | undefined } = {};
+  public witnesses: { [key: string]: MerkleMapWitness | undefined } = {};
 
   /**
    * Returns stored data for the given address
@@ -138,12 +144,30 @@ class VirtualStorage {
     address: string,
     mapName: string,
     key: string
-  ): MerkleMapWitness {
+  ): MerkleMapWitness | undefined {
     const map = this.getMap(address, mapName);
 
-    // tree only stores hashed values, we can retrieve the witness by a key
-    // eslint-disable-next-line new-cap
-    return map.getWitness(Field(key));
+    Circuit.log('VirtualStorage getWitness', {
+      address,
+      mapName,
+      key,
+    });
+
+    let witness = this.witnesses[this.getCombinedKey(mapName, key)];
+
+    if (witness) {
+      Circuit.log('Witness already created, returning it');
+      return witness;
+    }
+
+    witness ??= map.getWitness(
+      // eslint-disable-next-line new-cap
+      Field(key)
+    );
+
+    this.witnesses[this.getCombinedKey(mapName, key)] = witness;
+
+    return witness;
   }
 
   /**

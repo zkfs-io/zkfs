@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable new-cap */
 
-import type { VirtualStorage } from '@zkfs/virtual-storage';
+import { VirtualStorage } from '@zkfs/virtual-storage';
 import { Field, SmartContract, State, state } from 'snarkyjs';
 import errors from './errors.js';
 
@@ -20,12 +20,14 @@ interface RollingStateOptions {
  * which is the root hash of the offchain storage state
  */
 class OffchainStateContract extends SmartContract {
+  public static virtualStorage = new VirtualStorage();
+
   /**
    * Merkle root hash of the offchain storage state
    */
   @state(Field) public offchainStateRootHash = State<Field>();
 
-  public virtualStorage?: VirtualStorage;
+  public virtualStorage?: VirtualStorage = OffchainStateContract.virtualStorage;
 
   /* Way to access the offchain root state. */
   public root: OffchainStateMapRoot = new OffchainStateMapRoot(this);

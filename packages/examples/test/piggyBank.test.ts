@@ -3,10 +3,17 @@
 /* eslint-disable no-console */
 /* eslint-disable jest/require-top-level-describe */
 
-import { AccountUpdate, type PublicKey, UInt64 } from 'snarkyjs';
+import {
+  AccountUpdate,
+  PublicKey,
+  UInt64,
+  MerkleMap,
+  Poseidon,
+} from 'snarkyjs';
 
 import PiggyBank from './piggyBank.js';
 import describeContract from './describeContract.js';
+import { Key, OffchainStateMap } from '@zkfs/contract-api';
 
 // eslint-disable-next-line jest/require-hook
 describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
@@ -41,6 +48,11 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
 
     const tx0 = await localDeploy();
 
+    const map = new MerkleMap();
+    map.set(zkApp.deposits.key!.toField(), zkApp.deposits.rootHash!.treeValue);
+
+    console.log('root', map.getRoot().toString());
+
     console.log('PiggyBank.deploy() successful, initial offchain state:', {
       depositsRootHash: zkApp.deposits.getRootHash()?.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
@@ -65,9 +77,23 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
       key
     );
 
+    const depositsMap = new MerkleMap();
+    depositsMap.set(
+      zkApp.getDepositKey(senderAccount).toField(),
+      Poseidon.hash(UInt64.from(10).toFields())
+    );
+
+    map.set(
+      zkApp.deposits.key!.toField(),
+      Poseidon.hash(depositsMap.getRoot().toFields())
+    );
+
     expect(currentDepositAmount.toString()).toStrictEqual(
       UInt64.from(10).toString()
     );
+
+    console.log('root2 depositsmap', depositsMap.getRoot().toString());
+    console.log('root2', map.getRoot().toString());
 
     console.log('PiggyBank.initialDeposit() successful, new offchain state:', {
       currentDepositAmount: currentDepositAmount.toString(),

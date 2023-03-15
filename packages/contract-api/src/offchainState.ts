@@ -216,11 +216,23 @@ class OffchainState<KeyType, ValueType> {
         throw errors.keyNotFound();
       }
 
-      return this.contract.virtualStorage.getWitness(
+      // keep re-using the same witness, if it exists
+      if (this.witness) {
+        Circuit.log('Reusing old witness for key: ', this.key.toField());
+        return this.witness;
+      }
+
+      const witness = this.contract.virtualStorage.getWitness(
         this.contract.address.toBase58(),
         this.parent.mapName.toString(),
         this.key.toString()
       );
+
+      if (!witness) {
+        throw errors.witnessNotFound();
+      }
+
+      return witness;
     });
 
     return this.witness;
@@ -356,15 +368,21 @@ class OffchainState<KeyType, ValueType> {
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         !lastUpdatedOffchainState.value
       ) {
+        Circuit.log('Using old witness', {
+          thisKey: this.key?.toField(),
+        });
         return this.witness;
       }
 
-      Circuit.log(
-        'Ready to merge with witness',
-        this.key?.toField(),
-        lastUpdatedOffchainState.value
-        // lastUpdatedOffchainState.witness
-      );
+      Circuit.log('Ready to merge with witness', {
+        thisKey: this.key?.toField(),
+        lastUpdatedKey: lastUpdatedOffchainState.key?.toField(),
+        lastUpdateValue: lastUpdatedOffchainState.value,
+      });
+
+      if (lastUpdatedOffchainState.key?.toString() === this.key?.toString()) {
+        return lastUpdatedOffchainState.witness;
+      }
 
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       return mergeMerkleMapWitnesses(
@@ -372,7 +390,6 @@ class OffchainState<KeyType, ValueType> {
         lastUpdatedOffchainState.treeValue,
         lastUpdatedOffchainState.witness
       );
-      // return this.witness;
     });
 
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions

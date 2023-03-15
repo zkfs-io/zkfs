@@ -28,6 +28,8 @@ class ContractApi {
   public async fetchOffchainState(contract: OffchainStateContract) {
     // eslint-disable-next-line no-param-reassign
     contract.virtualStorage = this.virtualStorage;
+    Object.getPrototypeOf(contract).constructor.virtualStorage =
+      this.virtualStorage;
   }
 
   /**
@@ -93,6 +95,8 @@ class ContractApi {
 
       // eslint-disable-next-line no-param-reassign
       contract.virtualStorage = this.virtualStorage;
+      Object.getPrototypeOf(contract).constructor.virtualStorage =
+        this.virtualStorage;
 
       /**
        * Handling backup of the onchain state is necessary,

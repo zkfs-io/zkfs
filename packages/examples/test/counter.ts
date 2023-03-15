@@ -3,6 +3,7 @@ import {
   offchainState,
   OffchainStateContract,
   OffchainState,
+  Key,
 } from '@zkfs/contract-api';
 
 class Counter extends OffchainStateContract {
@@ -12,6 +13,9 @@ class Counter extends OffchainStateContract {
 
   public init() {
     super.init();
+    this.count1.getWitness();
+    this.count2.getWitness();
+
     this.count1.set(UInt64.from(0));
     this.count2.set(UInt64.from(0));
 
@@ -21,9 +25,8 @@ class Counter extends OffchainStateContract {
 
   @method
   public update() {
-    // const currentCount = this.count.get();
-    // const newCount = currentCount.add(1);
-    // this.count.set(newCount);
+    // const count1 = this.count1.get();
+    // this.count1.set(count1.add(1));
   }
 }
 

@@ -3,7 +3,7 @@
 /* eslint-disable no-console */
 /* eslint-disable jest/require-top-level-describe */
 
-import { AccountUpdate, UInt64 } from 'snarkyjs';
+import { AccountUpdate, MerkleMap, UInt64 } from 'snarkyjs';
 
 import Counter from './counter.js';
 import describeContract from './describeContract.js';

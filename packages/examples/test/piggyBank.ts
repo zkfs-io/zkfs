@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
-import { method, PublicKey, UInt64 } from 'snarkyjs';
+import { Circuit, method, PublicKey, UInt64 } from 'snarkyjs';
 import {
   offchainState,
   OffchainStateContract,
@@ -13,6 +13,7 @@ class PiggyBank extends OffchainStateContract {
 
   public init() {
     super.init();
+    Circuit.log('init');
     this.deposits.setRootHash(OffchainStateMap.initialRootHash());
   }
 
