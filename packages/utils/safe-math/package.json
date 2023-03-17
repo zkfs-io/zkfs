@@ -1,31 +1,35 @@
 {
-    "name": "@zkfs/safe-math",
-    "version": "0.1.0",
-    "description": "Safe Math Library for Snarkyjs",
-    "main": "index.js",
-    "public": true,
-    "type": "module",
-    "scripts": {
-      "build": "tsc -p tsconfig.json",
-      "lint": "eslint src",
-      "test": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../../node_modules/jest/bin/jest.js ./src",
-      "test:watch": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ./../../node_modules/jest/bin/jest.js ./src --watch",
-      "commit": "cz"
-    },
-    "keywords": [
-      "safe",
-      "math",
-      "snarkyjs",
-      "Mina"
-    ],
-    "license": "MIT",
-    "config": {
-      "commitizen": {
-        "path": "./node_modules/cz-conventional-changelog"
-      }
-    },
-    "dependencies": {
-      "snarkyjs": "^0.9.3"
+  "name": "@zkfs/safe-math",
+  "version": "0.1.0",
+  "description": "Safe Math Library for Snarkyjs",
+  "main": "index.js",
+  "public": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../../node_modules/jest/bin/jest.js ./src",
+    "test:watch": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ./../../node_modules/jest/bin/jest.js ./src --watch",
+    "test:ci": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../../node_modules/jest/bin/jest.js ./src",
+    "commit": "cz"
+  },
+  "keywords": [
+    "safe",
+    "math",
+    "snarkyjs",
+    "Mina"
+  ],
+  "main": "dist/index.js",
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "Apache-2.0",
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
     }
+  },
+  "dependencies": {
+    "snarkyjs": "^0.9.3"
   }
-  
+}
