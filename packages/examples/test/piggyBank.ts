@@ -6,11 +6,13 @@ import {
   OffchainState,
   OffchainStateMap,
   Key,
+  withOffchainState,
 } from '@zkfs/contract-api';
 
 class PiggyBank extends OffchainStateContract {
   @offchainState() public deposits = OffchainState.fromMap();
 
+  @withOffchainState
   public init() {
     super.init();
     this.deposits.setRootHash(OffchainStateMap.initialRootHash());
@@ -39,6 +41,7 @@ class PiggyBank extends OffchainStateContract {
    * @param {UInt64} amount - UInt64
    */
   @method
+  @withOffchainState
   public initialDeposit(to: PublicKey, amount: UInt64) {
     const key = this.getDepositKey(to);
 
@@ -60,6 +63,7 @@ class PiggyBank extends OffchainStateContract {
    * The amount of 'tokens' to deposit
    */
   @method
+  @withOffchainState
   public deposit(to: PublicKey, amount: UInt64) {
     const key = this.getDepositKey(to);
 

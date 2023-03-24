@@ -6,6 +6,7 @@ import {
   offchainState,
   OffchainStateContract,
   OffchainStateMapRoot,
+  withOffchainState,
 } from '@zkfs/contract-api';
 import {
   Circuit,
@@ -64,6 +65,7 @@ class ConcurrentCounter extends OffchainStateContract {
 
   @offchainState() public counters = OffchainState.fromMap();
 
+  @withOffchainState
   public init() {
     super.init();
     this.actionsHash.set(Reducer.initialActionsHash);
@@ -137,6 +139,7 @@ class ConcurrentCounter extends OffchainStateContract {
   }
 
   @method
+  @withOffchainState
   public rollup() {
     const actionsHash = this.actionsHash.get();
     this.actionsHash.assertEquals(actionsHash);
@@ -146,16 +149,6 @@ class ConcurrentCounter extends OffchainStateContract {
     });
 
     const currentRootHash = this.root.getRootHash();
-
-    /**
-     * Fail silently, until the following issue is resolved:
-     * https://discord.com/channels/484437221055922177/1081186784622424154
-     */
-    if (!this.virtualStorage?.data) {
-      // eslint-disable-next-line no-console
-      console.log('Skipping execution, because no virtual storage was found');
-      return;
-    }
 
     const { actionsHash: newActionsHash, state: newRootHash } =
       this.withRollingState(() =>
@@ -167,7 +160,7 @@ class ConcurrentCounter extends OffchainStateContract {
             state: currentRootHash,
             actionsHash,
           },
-          { maxTransactionsWithActions: 2 }
+          { maxTransactionsWithActions: 1 }
         )
       );
 
