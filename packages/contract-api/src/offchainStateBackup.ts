@@ -4,6 +4,7 @@
 // eslint-disable-next-line max-len
 /* eslint-disable @typescript-eslint/no-extraneous-class, @shopify/no-fully-static-classes */
 import { VirtualStorage } from '@zkfs/virtual-storage';
+import type { Field } from 'snarkyjs';
 
 import type OffchainStateContract from './offchainStateContract.js';
 import OffchainStateMapRoot from './offchainStateMapRoot.js';
