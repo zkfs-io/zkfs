@@ -30,6 +30,6 @@
     }
   },
   "dependencies": {
-    "snarkyjs": "^0.9.3"
+    "snarkyjs": "^0.9.4"
   }
 }
