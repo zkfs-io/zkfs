@@ -54,7 +54,6 @@ class OffchainStateContract extends SmartContract {
       ...this.rollingStateOptions,
       shouldEmitPrecondition: false,
       shouldEmitAccountUpdates: false,
-      shouldEmitEvents: true,
     };
   }
 
@@ -63,7 +62,6 @@ class OffchainStateContract extends SmartContract {
       ...this.rollingStateOptions,
       shouldEmitPrecondition: true,
       shouldEmitAccountUpdates: true,
-      shouldEmitEvents: true,
     };
   }
 
