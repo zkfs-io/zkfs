@@ -14,7 +14,7 @@ interface ContractTestContext<ZkApp extends OffchainStateContract> {
   contractApi: ContractApi;
 }
 
-const hasProofsEnabled = true;
+const hasProofsEnabled = false;
 
 async function withTimer<Result>(
   name: string,
