@@ -3,10 +3,13 @@
 /* eslint-disable no-console */
 /* eslint-disable jest/require-top-level-describe */
 
+import OffchainStateBackup from '@zkfs/contract-api/dist/offchainStateBackup.js';
 import { AccountUpdate, UInt64 } from 'snarkyjs';
 
 import Counter from './counter.js';
-import describeContract from './describeContract.js';
+import describeContract, { withTimer } from './describeContract.js';
+
+Error.stackTraceLimit = 10_000_000;
 
 // eslint-disable-next-line jest/require-hook
 describeContract<Counter>('counter', Counter, (context) => {
@@ -19,11 +22,16 @@ describeContract<Counter>('counter', Counter, (context) => {
       contractApi,
     } = context();
 
-    const tx = await contractApi.transaction(zkApp, deployerAccount, () => {
-      AccountUpdate.fundNewAccount(deployerAccount);
-      zkApp.deploy();
-    });
-    await tx.prove();
+    const tx = await withTimer(
+      'transaction',
+      async () =>
+        await contractApi.transaction(zkApp, deployerAccount, () => {
+          AccountUpdate.fundNewAccount(deployerAccount);
+          zkApp.deploy();
+        })
+    );
+
+    await withTimer('prove', async () => await tx.prove());
 
     // this tx needs .sign(), because `deploy()` adds an account update
     // that requires signature authorization
@@ -38,15 +46,11 @@ describeContract<Counter>('counter', Counter, (context) => {
 
     const tx0 = await localDeploy();
 
-    console.log('after init data', {
-      data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
-      offchainStateData: zkApp.count.contract?.virtualStorage?.data,
-    });
+    OffchainStateBackup.restoreLatest(zkApp);
 
     console.log('Counter.deploy() successful, initial offchain state:', {
-      count: zkApp.count.get().value.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
-      data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
+      data: zkApp.virtualStorage.data[zkApp.address.toBase58()],
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx0.toPretty(),
     });
@@ -54,22 +58,28 @@ describeContract<Counter>('counter', Counter, (context) => {
     console.log('Counter.update(), updating the offchain state...');
 
     // update transaction
-    const tx1 = await contractApi.transaction(zkApp, senderAccount, () => {
-      zkApp.update();
-    });
+    const tx1 = await withTimer(
+      'transaction',
+      async () =>
+        await contractApi.transaction(zkApp, senderAccount, () => {
+          zkApp.update();
+        })
+    );
 
-    await tx1.prove();
+    console.log('Counter.update(), proving');
+    await withTimer('prove', async () => await tx1.prove());
     await tx1.sign([senderKey]).send();
 
-    // eslint-disable-next-line putout/putout
-    const { value: updatedCountOne } = zkApp.count.get();
+    OffchainStateBackup.restoreLatest(zkApp);
+
+    const updatedCountOne = zkApp.count.get();
 
     expect(updatedCountOne.toString()).toStrictEqual(UInt64.from(1).toString());
 
     console.log('Counter.update() successful, new offchain state:', {
       count: updatedCountOne.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
-      data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
+      data: zkApp.virtualStorage.data[zkApp.address.toBase58()],
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx1.toPretty(),
     });
@@ -78,22 +88,30 @@ describeContract<Counter>('counter', Counter, (context) => {
       'Counter.update() the second time, updating the offchain state...'
     );
 
-    // update transaction
-    const tx2 = await contractApi.transaction(zkApp, senderAccount, () => {
-      zkApp.update();
-    });
+    // // update transaction
+    const tx2 = await withTimer(
+      'transaction',
+      async () =>
+        await contractApi.transaction(zkApp, senderAccount, () => {
+          console.log('running update');
+          zkApp.update();
+        })
+    );
 
-    await tx2.prove();
+    console.log('proving tx2');
+    await withTimer('prove', async () => await tx2.prove());
     await tx2.sign([senderKey]).send();
 
-    const { value: updatedCountTwo } = zkApp.count.get();
+    OffchainStateBackup.restoreLatest(zkApp);
+
+    const updatedCountTwo = zkApp.count.get();
 
     expect(updatedCountTwo.toString()).toStrictEqual(UInt64.from(2).toString());
 
-    console.log('Counter.update() successful, new offchain state:', {
+    console.log('Counter.update() 2 successful, new offchain state:', {
       count: updatedCountTwo.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
-      data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
+      data: zkApp.virtualStorage.data[zkApp.address.toBase58()],
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx2.toPretty(),
     });

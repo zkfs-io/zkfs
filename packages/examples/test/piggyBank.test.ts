@@ -3,10 +3,10 @@
 /* eslint-disable no-console */
 /* eslint-disable jest/require-top-level-describe */
 
-import { AccountUpdate, type PublicKey, UInt64 } from 'snarkyjs';
+import { AccountUpdate, UInt64 } from 'snarkyjs';
 
 import PiggyBank from './piggyBank.js';
-import describeContract from './describeContract.js';
+import describeContract, { withTimer } from './describeContract.js';
 
 // eslint-disable-next-line jest/require-hook
 describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
@@ -19,15 +19,24 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
       contractApi,
     } = context();
 
-    const tx = await contractApi.transaction(zkApp, deployerAccount, () => {
-      AccountUpdate.fundNewAccount(deployerAccount);
-      zkApp.deploy();
+    const tx = await withTimer(
+      'transaction',
+      async () =>
+        await contractApi.transaction(zkApp, deployerAccount, () => {
+          AccountUpdate.fundNewAccount(deployerAccount);
+          zkApp.deploy();
+        })
+    );
+
+    await withTimer('prove', async () => {
+      await tx.prove();
     });
-    await tx.prove();
 
     // this tx needs .sign(), because `deploy()` adds an account update
     // that requires signature authorization
     await tx.sign([deployerKey, zkAppPrivateKey]).send();
+
+    PiggyBank.offchainState.backup.restoreLatest(zkApp);
 
     return tx;
   }
@@ -42,9 +51,8 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
     const tx0 = await localDeploy();
 
     console.log('PiggyBank.deploy() successful, initial offchain state:', {
-      depositsRootHash: zkApp.deposits.getRootHash()?.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
-      data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
+      data: zkApp.virtualStorage.data[zkApp.address.toBase58()],
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx0.toPretty(),
     });
@@ -52,56 +60,64 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
     console.log('PiggyBank.initialDeposit(), updating the offchain state...');
 
     // update transaction
-    const tx1 = await contractApi.transaction(zkApp, senderAccount, () => {
-      zkApp.initialDeposit(senderAccount, UInt64.from(10));
-    });
+    const tx1 = await withTimer(
+      'transaction',
+      async () =>
+        await contractApi.transaction(zkApp, senderAccount, () => {
+          zkApp.initialDeposit(senderAccount, UInt64.from(10));
+        })
+    );
 
-    await tx1.prove();
+    await withTimer('prove', async () => await tx1.prove());
     await tx1.sign([senderKey]).send();
 
-    const key = zkApp.getDepositKey(senderAccount);
-    const [currentDepositAmount] = zkApp.deposits.get<PublicKey, UInt64>(
-      UInt64,
-      key
-    );
+    PiggyBank.offchainState.backup.restoreLatest(zkApp);
 
-    expect(currentDepositAmount.toString()).toStrictEqual(
-      UInt64.from(10).toString()
-    );
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const key = `${zkApp.deposits.mapName!.toString()}-${zkApp
+      .getDepositKey(senderAccount)
+      .toString()}`;
+
+    const currentDepositAmount =
+      zkApp.virtualStorage.data[zkApp.address.toBase58()]?.[key]?.[0];
 
     console.log('PiggyBank.initialDeposit() successful, new offchain state:', {
-      currentDepositAmount: currentDepositAmount.toString(),
-      depositsRootHash: zkApp.deposits.getRootHash()?.toString(),
+      currentDepositAmount,
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
-      data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
+      data: zkApp.virtualStorage.data[zkApp.address.toBase58()],
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx1.toPretty(),
     });
 
+    expect(currentDepositAmount).toStrictEqual(UInt64.from(10).toString());
+
     console.log('PiggyBank.deposit(), updating the offchain state...');
 
     // update transaction
-    const tx2 = await contractApi.transaction(zkApp, senderAccount, () => {
-      zkApp.deposit(senderAccount, UInt64.from(10));
-    });
-
-    await tx2.prove();
-    await tx2.sign([senderKey]).send();
-
-    const [currentUpdatedDepositAmount] = zkApp.deposits.get<PublicKey, UInt64>(
-      UInt64,
-      key
+    const tx2 = await withTimer(
+      'transaction',
+      async () =>
+        await contractApi.transaction(zkApp, senderAccount, () => {
+          zkApp.deposit(senderAccount, UInt64.from(10));
+        })
     );
 
-    expect(currentUpdatedDepositAmount.toString()).toStrictEqual(
+    await withTimer('prove', async () => await tx2.prove());
+    await tx2.sign([senderKey]).send();
+
+    PiggyBank.offchainState.backup.restoreLatest(zkApp);
+
+    const currentUpdatedDepositAmount =
+      zkApp.virtualStorage.data[zkApp.address.toBase58()]?.[key]?.[0];
+
+    expect(currentUpdatedDepositAmount).toStrictEqual(
       UInt64.from(20).toString()
     );
 
     console.log('PiggyBank.deposit() successful, new offchain state:', {
-      currentUpdatedDepositAmount: currentUpdatedDepositAmount.toString(),
-      depositsRootHash: zkApp.deposits.getRootHash()?.toString(),
+      currentUpdatedDepositAmount,
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
-      data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
+      data: zkApp.virtualStorage.data[zkApp.address.toBase58()],
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx2.toPretty(),
     });

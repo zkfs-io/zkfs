@@ -87,7 +87,7 @@ class OffchainStateMap {
    * @returns The root hash of the map.
    */
   public getRootHash() {
-    this.rootHash ??= this.initializeRootHash();
+    this.rootHash = this.initializeRootHash();
     this.rootHash.get();
 
     return this.rootHash.value;
@@ -100,7 +100,7 @@ class OffchainStateMap {
    * @param {Field} rootHash - The root hash of the map.
    */
   public setRootHash(rootHash: Field) {
-    this.rootHash ??= this.initializeRootHash();
+    this.rootHash = this.initializeRootHash();
     this.rootHash.set(rootHash);
 
     if (!this.parent) {
@@ -155,9 +155,11 @@ class OffchainStateMap {
 
     // use the rootHash's OffchainState to assert
     // if the own rootHash is part of the parent tree
+    this.rootHash.contract = this.contract;
     const rootHashIsInParentTree = this.rootHash.isInParentTree();
 
     // if there is a parent, continue asserting upwards
+    this.parent.contract = this.contract;
     const parentIsInParentTree = this.parent.isInParentTree();
 
     return rootHashIsInParentTree.and(parentIsInParentTree);

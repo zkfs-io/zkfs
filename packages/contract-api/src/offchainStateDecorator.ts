@@ -1,3 +1,4 @@
+/* eslint-disable max-statements */
 /* eslint-disable @typescript-eslint/no-invalid-this */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
@@ -59,6 +60,7 @@ function offchainState() {
       value.contract = self;
 
       value.parent = (self as OffchainStateContract).root;
+      value.parent.contract = self;
 
       return value;
     }

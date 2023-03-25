@@ -6,3 +6,4 @@ export { default as ContractApi } from './contractApi.js';
 export { default as OffchainStateMap } from './offchainStateMap.js';
 export { default as OffchainStateMapRoot } from './offchainStateMapRoot.js';
 export { default as Key } from './key.js';
+export { default as withOffchainState } from './withOffchainStateDecorator.js';

@@ -130,10 +130,6 @@ class OffchainState<KeyType, ValueType> {
       throw errors.contractNotFound();
     }
 
-    if (!this.contract.virtualStorage) {
-      throw errors.virtualStorageNotFound();
-    }
-
     if (!this.parent?.mapName) {
       throw errors.parentMapNotFound();
     }
@@ -165,28 +161,31 @@ class OffchainState<KeyType, ValueType> {
       throw errors.valueTypeNotFound();
     }
 
-    this.value = Circuit.witness<ValueType>(this.valueType, () => {
-      const valueFields = this.getValueFieldsFromVirtualStorage();
-
-      if (!valueFields) {
-        // eslint-disable-next-line max-len
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        if (!defaultValue) {
-          throw errors.valueFieldsNotFound();
-        }
-
-        return defaultValue;
-      }
-
-      if (!this.valueType) {
-        throw errors.valueTypeNotFound();
-      }
-
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      return this.valueType.fromFields(valueFields) as ValueType;
-    });
+    this.value = Circuit.witness<ValueType>(this.valueType, () =>
+      this.provideValue(defaultValue)
+    );
 
     return this.value;
+  }
+
+  public provideValue(defaultValue?: ValueType): ValueType {
+    if (!this.valueType) {
+      throw errors.valueTypeNotFound();
+    }
+
+    const valueFields = this.getValueFieldsFromVirtualStorage();
+
+    if (!valueFields) {
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      if (!defaultValue) {
+        throw errors.valueFieldsNotFound();
+      }
+
+      return defaultValue;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    return this.valueType.fromFields(valueFields) as ValueType;
   }
 
   /**
@@ -198,10 +197,6 @@ class OffchainState<KeyType, ValueType> {
     this.witness = Circuit.witness<MerkleMapWitness>(MerkleMapWitness, () => {
       if (!this.contract) {
         throw errors.contractNotFound();
-      }
-
-      if (!this.contract.virtualStorage) {
-        throw errors.virtualStorageNotFound();
       }
 
       if (!this.parent?.mapName) {
@@ -332,6 +327,7 @@ class OffchainState<KeyType, ValueType> {
 
   public assertIsInParentTree() {
     const isInParentTree = this.isInParentTree();
+
     isInParentTree.assertTrue();
   }
 
@@ -356,6 +352,7 @@ class OffchainState<KeyType, ValueType> {
     }
 
     // take the root hash of own parent
+    this.parent.contract = this.contract;
     const parentRootHash = this.parent.getRootHash();
 
     if (!parentRootHash) {
@@ -462,6 +459,7 @@ class OffchainState<KeyType, ValueType> {
    * @param {ValueType} value - The value to be set.
    * @returns The value that was set.
    */
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   public set(
     value: ValueType,
     { shouldEmitEvent }: SetOptions = OffchainState.defaultSetOptions
@@ -485,12 +483,30 @@ class OffchainState<KeyType, ValueType> {
     this.value = value;
 
     const valueFields = this.valueType.toFields(this.value);
-    this.contract.virtualStorage.setValue(
-      this.contract.address.toBase58(),
-      this.parent.mapName.toString(),
-      this.key.toString(),
-      valueFields
-    );
+    Circuit.asProver(() => {
+      if (!this.parent?.mapName) {
+        throw errors.parentMapNotFound();
+      }
+
+      if (!this.key) {
+        throw errors.keyNotFound();
+      }
+
+      if (!this.contract?.virtualStorage) {
+        throw errors.virtualStorageNotFound();
+      }
+
+      if (!this.valueType) {
+        throw errors.valueTypeNotFound();
+      }
+
+      this.contract.virtualStorage.setValue(
+        this.contract.address.toBase58(),
+        this.parent.mapName.toString(),
+        this.key.toString(),
+        valueFields
+      );
+    });
 
     this.getWitness();
 
