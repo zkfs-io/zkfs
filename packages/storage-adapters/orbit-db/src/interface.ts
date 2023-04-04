@@ -1,11 +1,14 @@
 /* eslint-disable lines-around-comment */
 /* eslint-disable unicorn/prevent-abbreviations */
+import type { VirtualStorage } from '@zkfs/virtual-storage';
 import type { IPFS } from 'ipfs-core';
 
 // eslint-disable-next-line import/no-relative-packages
 import type { Address } from '../../../node/src/interface.js';
 
 interface OrbitDbStoragePartialConfig {
+  virtualStorage: VirtualStorage;
+
   ipfs: IPFS;
   /**
    * A list of Mina account addresses to be watched.
