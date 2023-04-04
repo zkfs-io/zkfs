@@ -1,5 +1,5 @@
+/* eslint-disable max-len */
 /* eslint-disable max-lines */
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable unicorn/prevent-abbreviations */
@@ -7,6 +7,7 @@ import { TextEncoder, TextDecoder } from 'node:util';
 
 import { v4 as uuidv4 } from 'uuid';
 import type { Message } from '@libp2p/interface-pubsub';
+import type { VirtualStorage } from '@zkfs/virtual-storage';
 
 import {
   type RequestSchemaType,
@@ -27,8 +28,10 @@ import OrbitDbStoragePartial from './orbitDbStoragePartial.js';
 
 const responseValidation = validatorFactory<ResponseSchemaType>(responseSchema);
 
-/* It's a class that extends the OrbitDbStoragePartial class and overrides the getMap and getValues
-methods to use the light client */
+/**
+ * It's a class that extends the OrbitDbStoragePartial class and overrides the getMap and getValues
+ * methods to use the light client
+ */
 class OrbitDbStorageLight extends OrbitDbStoragePartial {
   public lightClientConfig: OrbitDbStorageLightConfig;
 
@@ -91,6 +94,14 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
       console.error('Error decoding orbit-db data provider response', error);
       return undefined;
     }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  public async getWitness(
+    account: string,
+    mapName: string
+  ): Promise<string | undefined> {
+    throw new Error('Not implemented');
   }
 
   /**
@@ -227,7 +238,6 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
 
     // do not call .getMap because the implementation differs from parent
     const mapStore = this.getMapStore(account);
-    // todo handle this case
     return mapStore?.get(mapName);
   }
 
@@ -244,6 +254,7 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     account: Address,
     receivedValueRecords: string
   ): Promise<ValueRecord | undefined> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const valueRecords: ValueRecord = JSON.parse(receivedValueRecords);
     await this.createValueStoreInstanceIfNotExisting(account);
 
@@ -331,7 +342,7 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
         'OrbitDb instance undefined, have you called .initialized()?'
       );
     }
-    const dbAddress = await this.getMapOrbitDbAddress(account);
+    const dbAddress = await this.getValueOrbitDbAddress(account);
     return await this.orbitDb.keyvalue<string>(dbAddress.toString());
   }
 }

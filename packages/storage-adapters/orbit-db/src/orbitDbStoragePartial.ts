@@ -9,6 +9,7 @@ import type { PeerId } from '@libp2p/interface-peer-id';
 import OrbitDB from 'orbit-db';
 import type KeyValueStore from 'orbit-db-kvstore';
 import type { IPFS } from 'ipfs-core';
+import type { VirtualStorage } from '@zkfs/virtual-storage';
 
 import type {
   StorageAdapter,
@@ -34,7 +35,11 @@ class OrbitDbStoragePartial implements StorageAdapter {
 
   public orbitDb: OrbitDB | undefined;
 
-  public constructor(public config: OrbitDbStoragePartialConfig) {}
+  public virtualStorage: VirtualStorage;
+
+  public constructor(public config: OrbitDbStoragePartialConfig) {
+    this.virtualStorage = this.config.virtualStorage;
+  }
 
   public saveStoreInstances(
     orbitDbStoresArray: Record<OrbitDbAddress, KeyValueStore<string>>[]
@@ -86,6 +91,17 @@ class OrbitDbStoragePartial implements StorageAdapter {
       return undefined;
     }
     return this.storeInstances[valuePath];
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  public async getWitness(
+    account: string,
+    mapName: string,
+    key: string
+  ): Promise<string | undefined> {
+    return JSON.stringify(
+      this.virtualStorage.getWitness(account, mapName, key)
+    );
   }
 
   public async setValue(
@@ -266,6 +282,7 @@ class OrbitDbStoragePartial implements StorageAdapter {
     map: string,
     mapName: string
   ): Promise<void> {
+    // eslint-disable-next-line no-warning-comments
     // todo check whether store exists before setting
     // shouldn't be possible if store was not registered
     await this.getMapStore(account)?.set(mapName, map);
