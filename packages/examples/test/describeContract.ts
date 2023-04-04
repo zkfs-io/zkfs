@@ -1,10 +1,11 @@
+/* eslint-disable max-statements */
 /* eslint-disable @typescript-eslint/naming-convention */
 import { isReady, Mina, PrivateKey, type PublicKey } from 'snarkyjs';
 import { ContractApi, type OffchainStateContract } from '@zkfs/contract-api';
 import { ZkfsNode } from '@zkfs/node';
 import type { OrbitDbStorageLight } from '@zkfs/storage-orbit-db';
 
-import PeerNodeHelper from './helpers/peerNode.js';
+import TestNodeHelper from './helpers/testNodeHelper.js';
 import createLightClientConfig from './helpers/lightClient.js';
 
 interface ContractTestContext<ZkApp extends OffchainStateContract> {
@@ -16,8 +17,8 @@ interface ContractTestContext<ZkApp extends OffchainStateContract> {
   zkAppPrivateKey: PrivateKey;
   zkApp: ZkApp;
   contractApi: ContractApi;
-  peerNode: PeerNodeHelper;
-  mockEventParser: () => Promise<void>;
+  peerNode: TestNodeHelper;
+  mockEventParser: (offchainState?: any) => Promise<void>;
 }
 
 const hasProofsEnabled = false;
@@ -28,13 +29,13 @@ function describeContract<ZkApp extends OffchainStateContract>(
   Contract: typeof OffchainStateContract,
   testCallback: (context: () => ContractTestContext<ZkApp>) => void
 ) {
-    let peerNode: PeerNodeHelper, peerId: string;
+  let peerNode: TestNodeHelper, peerId: string;
   describe(name, () => {
     beforeAll(async () => {
       await isReady;
 
-      peerNode = new PeerNodeHelper();
-      peerId = await peerNode.setup();
+      peerNode = await TestNodeHelper.setup();
+      peerId = peerNode.id;
 
       // eslint-disable-next-line max-len
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, putout/putout
@@ -74,17 +75,18 @@ function describeContract<ZkApp extends OffchainStateContract>(
       const lightClientConfig = await createLightClientConfig(peerId);
       const lightClient = new ZkfsNode<OrbitDbStorageLight>(lightClientConfig);
       await lightClient.start();
-
+      console.log('light client was set up');
       const contractApi = new ContractApi(lightClient);
 
-      async function mockEventParser() {
-        const { virtualStorage: contractApiVirtualStorage } = contractApi;
+      async function mockEventParser(offchainState?: any) {
+        const { virtualStorage } = contractApi;
         await peerNode.mockEventParser(
-          zkAppAddress.toBase58(),
-          contractApiVirtualStorage,
-          zkApp
+          zkApp.address.toBase58(),
+          virtualStorage,
+          offchainState
         );
       }
+      console.log('mock event parser was set up');
 
       context = {
         deployerAccount,
