@@ -9,6 +9,7 @@
     "dev": "tsc -p tsconfig.json --watch",
     "lint": "eslint ./src",
     "test": "npm run test:clean && node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./src --forceExit",
+    "test:file": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js --forceExit",
     "test:ci": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./src --forceExit",
     "test:watch": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./src --watch",
     "test:clean": "rm -rf ipfs-* orbitdb"
