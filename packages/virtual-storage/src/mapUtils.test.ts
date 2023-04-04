@@ -1,7 +1,7 @@
 /* eslint-disable new-cap */
 import { Field, isReady, MerkleMap } from 'snarkyjs';
 
-import { serializeMap, deserializeMap } from './mapUtils.js';
+import { serializeMap, deserializeMap, serializeWitness, deserializeWitness } from './mapUtils.js';
 
 describe('mapUtils', () => {
   beforeAll(async () => {
@@ -28,4 +28,29 @@ describe('mapUtils', () => {
       expect(secondValue.toString()).toBe(Field(20).toString());
     });
   });
+
+  describe('deserializeWitness', () => {
+    it('should deserialize the given serialized witness', () => {
+      expect.assertions(3);
+
+      const originalMap = new MerkleMap();
+      const originalKey = Field(5);
+      const originalValue = Field(10);
+      originalMap.set(originalKey, originalValue);
+      originalMap.set(Field(0), Field(3));
+
+      const witness = originalMap.getWitness(originalKey);
+      const serializedWitness = serializeWitness(witness);
+      const deserializedWitness = deserializeWitness(serializedWitness);
+
+      const [root, key] = deserializedWitness.computeRootAndKey(originalValue);
+      const originalRoot = originalMap.getRoot();
+      const [originalRootFromWitness] =
+        witness.computeRootAndKey(originalValue);
+
+      expect(originalKey.toString()).toBe(key.toString());
+      expect(originalRoot.toString()).toBe(root.toString());
+      expect(originalRootFromWitness.toString()).toBe(root.toString());
+    });
+  })
 });
