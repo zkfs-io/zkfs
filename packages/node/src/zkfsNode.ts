@@ -1,15 +1,20 @@
-/* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
-import {
+import type {
   OrbitDbStorageLight,
   OrbitDbStoragePartial,
 } from '@zkfs/storage-orbit-db';
 
-import type { ZkfsNodeConfig, Service, StorageAdapter } from './interface.js';
+import type {
+  ZkfsNodeConfig,
+  Service,
+  StorageAdapter,
+  EventParserAdapter,
+  ZkfsWriterNodeConfig,
+} from './interface.js';
 
 class ZkfsNode<Storage extends StorageAdapter> implements ZkfsNode<Storage> {
   public static withPartialStorage(
-    config: ZkfsNodeConfig<OrbitDbStoragePartial>
+    config: ZkfsWriterNodeConfig<OrbitDbStoragePartial>
   ) {
     return new ZkfsNode<OrbitDbStoragePartial>(config);
   }
@@ -20,16 +25,17 @@ class ZkfsNode<Storage extends StorageAdapter> implements ZkfsNode<Storage> {
 
   public storage: Storage;
 
-  public services: Service[];
+  public services: Service<Storage>[];
+
+  public eventParser: EventParserAdapter<Storage> | undefined;
 
   public constructor(config: ZkfsNodeConfig<Storage>) {
     this.storage = config.storage;
     this.services = config.services ?? [];
+    this.eventParser = config.eventParser ?? undefined;
   }
 
-  public async start() {
-    await this.storage.isReady();
-    await this.storage.initialize();
+  public startServices() {
     Promise.all(
       this.services.map(async (service) => {
         await service.initialize(this);
@@ -39,6 +45,25 @@ class ZkfsNode<Storage extends StorageAdapter> implements ZkfsNode<Storage> {
       // eslint-disable-next-line no-console
       console.error(error);
     });
+  }
+
+  public startEventParser() {
+    if (this.eventParser) {
+      // eslint-disable-next-line promise/prefer-await-to-then
+      Promise.all([this.eventParser.initialize(this)]).catch(
+        (error: unknown) => {
+          // eslint-disable-next-line no-console
+          console.error(error);
+        }
+      );
+    }
+  }
+
+  public async start() {
+    await this.storage.isReady();
+    await this.storage.initialize();
+    this.startServices();
+    this.startEventParser();
   }
 }
 
