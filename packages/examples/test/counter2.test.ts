@@ -42,35 +42,8 @@ describeContract<Counter2>('counter', Counter2, (context) => {
 
   it('correctly updates the count state on the `Counter` smart contract', async () => {
     expect.assertions(1);
-    console.log(UInt64.from(0))
 
-    const map = new MerkleMap();
-    console.log('root before init should be', map.getRoot().toString());
-
-    const count1 = Key.fromString('count1').toField();
-    map.set(count1, Poseidon.hash(UInt64.from(0).toFields()));
-
-    const count2 = Key.fromString('count2').toField();
-    map.set(count2, Poseidon.hash(UInt64.from(0).toFields()));
-    console.log('root after init should be', map.getRoot().toString());
-
-    map.set(count1, Poseidon.hash(UInt64.from(1).toFields()));
-    console.log(
-      'root after setting count1 should be',
-      map.getRoot().toString()
-    );
-
-    map.set(count2, Poseidon.hash(UInt64.from(2).toFields()));
-    console.log(
-      'root after setting count2 should be',
-      map.getRoot().toString()
-    );
-    console.log('final root after update should be', map.getRoot().toString());
-
-    const map2 = new MerkleMap();
-    map2.set(count1, Poseidon.hash(UInt64.from(0).toFields()));
-    map2.set(count2, Poseidon.hash(UInt64.from(2).toFields()));
-    console.log('root if only count2 was set', map2.getRoot().toString());
+    const { map, count1, count2 } = manualMapTesting();
 
     const { senderAccount, senderKey, zkApp, contractApi } = context();
 
@@ -87,7 +60,10 @@ describeContract<Counter2>('counter', Counter2, (context) => {
       ).toString()
     );
 
+    console.log('getting count1 and count2 after successful deploy')
     console.log('Counter.deploy() successful, initial offchain state:', {
+      count1: zkApp.count1.get().toString(),
+      count2: zkApp.count2.get().toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
       data: zkApp.virtualStorage.data[zkApp.address.toBase58()],
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -107,22 +83,13 @@ describeContract<Counter2>('counter', Counter2, (context) => {
     console.log('Counter.update(), proving');
     await withTimer('prove', async () => await tx1.prove());
     await tx1.sign([senderKey]).send();
-
-
     OffchainStateBackup.restoreLatest(zkApp);
-
-
-
-    // let updatedCountOne: UInt64 | undefined;
-    // Circuit.asProver(() => {
-    //   updatedCountOne = zkApp.count1.get();
-    // })
-    // expect(updatedCountOne!.toString()).toStrictEqual(UInt64.from(1).toString());
-    // zkApp.lastUpdatedOffchainState =
-    //   OffchainStateBackup.lastUpdatedOffchainStateBackup.latest.lastUpdatedOffchainState;
+    
+    console.log('getting count1 and count2 after successful update');
 
     console.log('Counter.update() successful, new offchain state:', {
-      //count: updatedCountOne.toString(),
+      count1: zkApp.count1.get().toString(),
+      count2: zkApp.count2.get().toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
       data: zkApp.virtualStorage.data[zkApp.address.toBase58()],
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -159,14 +126,14 @@ describeContract<Counter2>('counter', Counter2, (context) => {
     );
 
     console.log('getting count')
-    // const updatedCountTwo = zkApp.count1.get();
     // const updatedCount3 = zkApp.count2.get();
 
     // expect(updatedCountTwo.toString()).toStrictEqual(UInt64.from(2).toString());
     // expect(updatedCount3.toString()).toStrictEqual(UInt64.from(4).toString());
 
     console.log('Counter.update() 2 successful, new offchain state:', {
-      //count: updatedCountTwo.toString(),
+      count1: zkApp.count1.get().toString(),
+      count2: zkApp.count2.get().toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
       data: zkApp.virtualStorage.data[zkApp.address.toBase58()],
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -177,3 +144,37 @@ describeContract<Counter2>('counter', Counter2, (context) => {
     expect(zkApp.offchainStateRootHash.get().toString()).toBe(map.getRoot().toString())
   });
 });
+
+function manualMapTesting() {
+  console.log(UInt64.from(0));
+
+  const map = new MerkleMap();
+  console.log('root before init should be', map.getRoot().toString());
+
+  const count1 = Key.fromString('count1').toField();
+  map.set(count1, Poseidon.hash(UInt64.from(0).toFields()));
+
+  const count2 = Key.fromString('count2').toField();
+  map.set(count2, Poseidon.hash(UInt64.from(0).toFields()));
+  console.log('root after init should be', map.getRoot().toString());
+
+  map.set(count1, Poseidon.hash(UInt64.from(1).toFields()));
+  console.log(
+    'root after setting count1 should be',
+    map.getRoot().toString()
+  );
+
+  map.set(count2, Poseidon.hash(UInt64.from(2).toFields()));
+  console.log(
+    'root after setting count2 should be',
+    map.getRoot().toString()
+  );
+  console.log('final root after update should be', map.getRoot().toString());
+
+  const map2 = new MerkleMap();
+  map2.set(count1, Poseidon.hash(UInt64.from(0).toFields()));
+  map2.set(count2, Poseidon.hash(UInt64.from(2).toFields()));
+  console.log('root if only count2 was set', map2.getRoot().toString());
+  return { map, count1, count2 };
+}
+

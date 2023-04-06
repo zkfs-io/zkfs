@@ -114,7 +114,6 @@ describeContract<Counter>('counter', Counter, (context) => {
 
     expect(updatedCountTwo.toString()).toStrictEqual(UInt64.from(2).toString());
 
-    
 
     console.log('Counter.update() 2 successful, new offchain state:', {
       count: updatedCountTwo.toString(),
@@ -123,6 +122,7 @@ describeContract<Counter>('counter', Counter, (context) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx2.toPretty(),
     });
+
     expect(zkApp.offchainStateRootHash.get().toString()).toBe(map.getRoot().toString())
   });
 });
