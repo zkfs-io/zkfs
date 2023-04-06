@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable max-lines */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable new-cap */
@@ -10,6 +12,7 @@ import {
   Circuit,
   type FlexibleProvablePure,
 } from 'snarkyjs';
+import { mergeMerkleMapWitnesses } from '@zkfs/virtual-storage';
 
 // this needs to be removed once https://github.com/o1-labs/snarkyjs/issues/777 is fixed
 // eslint-disable-next-line import/no-relative-packages
@@ -207,11 +210,24 @@ class OffchainState<KeyType, ValueType> {
         throw errors.keyNotFound();
       }
 
-      return this.contract.virtualStorage.getWitness(
+      // keep re-using the same witness, if it exists
+      if (this.witness) {
+        //Circuit.log('Reusing old witness for key: ', this.key.toField());
+        return this.witness;
+      }
+
+      // Circuit.log('not reusing old witness, getting witness from virtual storage')
+      const witness = this.contract.virtualStorage.getWitness(
         this.contract.address.toBase58(),
         this.parent.mapName.toString(),
         this.key.toString()
       );
+
+      if (!witness) {
+        throw errors.witnessNotFound();
+      }
+
+      return witness;
     });
 
     return this.witness;
@@ -320,6 +336,55 @@ class OffchainState<KeyType, ValueType> {
     if (!this.witness) {
       throw errors.witnessNotFound();
     }
+
+    // attempt to merge the current witness with the latest available witness
+    this.witness = Circuit.witness<MerkleMapWitness>(MerkleMapWitness, () => {
+      if (!this.witness) {
+        throw errors.witnessNotFound();
+      }
+
+      if (!this.parent?.mapName) {
+        throw errors.parentMapNotFound();
+      }
+
+      if (!this.contract) {
+        throw errors.contractNotFound();
+      }
+
+      const lastUpdatedOffchainState =
+        this.contract.getLastUpdatedOffchainState(
+          this.parent.mapName.toField().toString()
+        );
+
+      // if there is no state/witness to merge with, return the existing witness
+      if (
+        !lastUpdatedOffchainState?.witness ||
+        // eslint-disable-next-line max-len
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        !lastUpdatedOffchainState.value
+      ) {
+        Circuit.log('Using old witness', {
+          thisKey: this.key?.toField(),
+        });
+        return this.witness;
+      }
+
+      Circuit.log('Ready to merge with witness', {
+        thisKey: this.key?.toField(),
+        lastUpdatedKey: lastUpdatedOffchainState.key?.toField(),
+        lastUpdateValue: lastUpdatedOffchainState.value,
+      });
+
+      if (lastUpdatedOffchainState.key?.toString() === this.key?.toString()) {
+        return lastUpdatedOffchainState.witness;
+      }
+
+      return mergeMerkleMapWitnesses(
+        this.witness,
+        lastUpdatedOffchainState.treeValue,
+        lastUpdatedOffchainState.witness
+      );
+    });
 
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     return this.witness.computeRootAndKey(this.treeValue) as [Field, Field];
@@ -482,6 +547,8 @@ class OffchainState<KeyType, ValueType> {
 
     this.value = value;
 
+    this.getWitness();
+
     const valueFields = this.valueType.toFields(this.value);
     Circuit.asProver(() => {
       if (!this.parent?.mapName) {
@@ -508,13 +575,19 @@ class OffchainState<KeyType, ValueType> {
       );
     });
 
-    this.getWitness();
-
     const [computedParentRootHash, computedParentKey] =
       this.getComputedParentRootHashAndKey();
 
     this.key.toField().assertEquals(computedParentKey);
     this.parent.setRootHash(computedParentRootHash);
+
+
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const lastUpdatedOffchainState = this as OffchainState<unknown, unknown>;
+    this.contract.setLastUpdatedOffchainState(
+      this.parent.mapName.toString(),
+      lastUpdatedOffchainState
+    );
 
     if (this.contract.rollingStateOptions.shouldEmitEvents && shouldEmitEvent) {
       this.emitSetEvent();

@@ -1,3 +1,7 @@
-// eslint-disable-next-line max-len
-// eslint-disable-next-line import/no-unused-modules, import/prefer-default-export
+/* eslint-disable import/no-unused-modules */
+// eslint-disable import/prefer-default-export
 export { default as VirtualStorage } from './virtualStorage.js';
+export {
+  type MergableMerkleMapWitness,
+  mergeMerkleMapWitnesses,
+} from './mergableMerkleMapWitness.js';

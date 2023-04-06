@@ -1,9 +1,12 @@
+/* eslint-disable lines-around-comment */
+/* eslint-disable sort-class-members/sort-class-members */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable new-cap */
 import { Field, SmartContract, State, state } from 'snarkyjs';
 
 import OffchainStateMapRoot from './offchainStateMapRoot.js';
 import OffchainStateBackup from './offchainStateBackup.js';
+import type OffchainState from './offchainState.js';
 
 interface RollingStateOptions {
   shouldEmitEvents: boolean;
@@ -40,6 +43,31 @@ class OffchainStateContract extends SmartContract {
 
   public set virtualStorage(value) {
     OffchainStateContract.offchainState.backup.virtualStorage = value;
+  }
+
+  public lastUpdatedOffchainState?: Record<
+    // map name
+    string,
+    // instance of the last updated offchain state on that map
+    OffchainState<unknown, unknown> | undefined
+  >;
+
+  public resetLastUpdatedOffchainState() {
+    this.lastUpdatedOffchainState = undefined;
+  }
+
+  public getLastUpdatedOffchainState(
+    mapName: string
+  ): OffchainState<unknown, unknown> | undefined {
+    return this.lastUpdatedOffchainState?.[mapName];
+  }
+
+  public setLastUpdatedOffchainState(
+    mapName: string,
+    lastUpdatedOffchainState: OffchainState<unknown, unknown>
+  ) {
+    this.lastUpdatedOffchainState ??= {};
+    this.lastUpdatedOffchainState[mapName] = lastUpdatedOffchainState;
   }
 
   public setRollingStateOptions(options: Partial<RollingStateOptions>) {

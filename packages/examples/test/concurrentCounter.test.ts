@@ -3,8 +3,9 @@
 /* eslint-disable jest/require-top-level-describe */
 /* eslint-disable max-statements */
 
+import { Key } from '@zkfs/contract-api';
 import OffchainStateBackup from '@zkfs/contract-api/dist/offchainStateBackup.js';
-import { AccountUpdate, UInt64 } from 'snarkyjs';
+import { AccountUpdate, MerkleMap, Poseidon, UInt64 } from 'snarkyjs';
 
 import ConcurrentCounter from './concurrentCounter.js';
 import describeContract from './describeContract.js';
@@ -37,7 +38,22 @@ describeContract<ConcurrentCounter>(
     }
 
     it('correctly updates the count state on the `ConcurrentCounter` smart contract', async () => {
-      expect.assertions(1);
+      expect.assertions(2);
+
+      const rootMap = new MerkleMap();
+
+      const countersKeyInRoot = Key.fromString('counters').toField();
+
+      const nestedMap = new MerkleMap();
+      const keyInNestedMap = ConcurrentCounter.idToKey(
+        UInt64.from(0)
+      ).toField();
+
+      nestedMap.set(keyInNestedMap, Poseidon.hash(UInt64.from(1).toFields()))
+      rootMap.set(
+        countersKeyInRoot,
+        Poseidon.hash(nestedMap.getRoot().toFields())
+      );
 
       const { senderAccount, senderKey, zkApp, contractApi } = context();
 
@@ -67,7 +83,7 @@ describeContract<ConcurrentCounter>(
       console.log('ConcurrentCounter.rollup(), rolling up actions...', {
         counters:
           zkApp.counters.contract?.virtualStorage.data[
-            zkApp.address.toBase58()
+          zkApp.address.toBase58()
           ],
       });
 
@@ -103,6 +119,9 @@ describeContract<ConcurrentCounter>(
       const counter = data?.[key]?.[0];
 
       expect(counter).toBe('1');
+      expect(zkApp.offchainStateRootHash.get().toString()).toBe(
+        rootMap.getRoot().toString()
+      );
     });
   }
 );
