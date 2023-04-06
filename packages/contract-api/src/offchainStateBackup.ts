@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /* eslint-disable lines-around-comment */
 /* eslint-disable etc/no-commented-out-code */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -29,10 +30,10 @@ type LastUpdatedOffchainState =
 
 interface LastUpdatedOffchainStateBackup {
   initial: {
-    lastUpdatedOffchainState?: LastUpdatedOffchainState;
+    lastUpdatedOffchainState?: LastUpdatedOffchainState | undefined;
   };
   latest: {
-    lastUpdatedOffchainState?: LastUpdatedOffchainState;
+    lastUpdatedOffchainState?: LastUpdatedOffchainState | undefined;
   };
 }
 
@@ -43,11 +44,11 @@ class OffchainStateBackup {
 
   public static lastUpdatedOffchainState:
     | Record<
-        // map name
-        string,
-        // instance of the last updated offchain state on that map
-        OffchainState<unknown, unknown> | undefined
-      >
+      // map name
+      string,
+      // instance of the last updated offchain state on that map
+      OffchainState<unknown, unknown> | undefined
+    >
     | undefined = undefined;
 
   public static lastUpdatedOffchainStateBackup: LastUpdatedOffchainStateBackup =
@@ -64,18 +65,39 @@ class OffchainStateBackup {
     this.virtualStorageBackup.initial.data = JSON.stringify(
       target.virtualStorage.data
     );
+    console.log(
+      'initial state to be backed up',
+      target.lastUpdatedOffchainState
+    );
+    // console.log(
+    //   'backup initial value',
+    //   target
+    //     .getLastUpdatedOffchainState(
+    //       '26066477330778984202216424320685767887570180679420406880153508397309006440830'
+    //     )
+    //     ?.value?.toString()
+    // );
+
     this.lastUpdatedOffchainStateBackup.initial.lastUpdatedOffchainState =
-      _.cloneDeep(target.lastUpdatedOffchainState);
-    // try reassigning for each OffchainState in record the contract = target
+      target.lastUpdatedOffchainState
+        ? _.cloneDeep(target.lastUpdatedOffchainState)
+        : undefined;
   }
 
   public static backupLatest(target: OffchainStateContract) {
     this.virtualStorageBackup.latest.data = JSON.stringify(
       target.virtualStorage.data
     );
-    this.lastUpdatedOffchainStateBackup.latest.lastUpdatedOffchainState =
-      _.cloneDeep(target.lastUpdatedOffchainState);
-      // try reassigning for each OffchainState in record the contract = target
+    this.lastUpdatedOffchainStateBackup.latest.lastUpdatedOffchainState = target.lastUpdatedOffchainState ?
+      _.cloneDeep(target.lastUpdatedOffchainState) : undefined;
+    console.log(
+      'backup latest',
+      target
+        .getLastUpdatedOffchainState(
+          '26066477330778984202216424320685767887570180679420406880153508397309006440830'
+        )
+        ?.value?.toString() ?? 'undefined'
+    );
   }
 
   public static restoreInitial(target: OffchainStateContract) {
@@ -88,6 +110,21 @@ class OffchainStateBackup {
 
     target.virtualStorage.data = JSON.parse(
       this.virtualStorageBackup.initial.data
+    );
+
+    this.lastUpdatedOffchainState = this.lastUpdatedOffchainStateBackup.initial
+      .lastUpdatedOffchainState
+      ? _.cloneDeep(
+        this.lastUpdatedOffchainStateBackup.initial.lastUpdatedOffchainState
+      ) : undefined;
+
+    console.log(
+      'restore initial',
+      target
+        .getLastUpdatedOffchainState(
+          '26066477330778984202216424320685767887570180679420406880153508397309006440830'
+        )
+        ?.value?.toString() ?? 'undefined'
     );
 
     target.root = new OffchainStateMapRoot(target);
@@ -105,10 +142,17 @@ class OffchainStateBackup {
       this.virtualStorageBackup.latest.data
     );
 
+    console.log(this.lastUpdatedOffchainStateBackup.latest.lastUpdatedOffchainState)
     target.lastUpdatedOffchainState = _.cloneDeep(
       this.lastUpdatedOffchainStateBackup.latest.lastUpdatedOffchainState
     );
-    // try reassigning for each OffchainState in record the contract = target
+    console.log(
+      'restore latest',
+      target.lastUpdatedOffchainState ? target.lastUpdatedOffchainState[
+        '26066477330778984202216424320685767887570180679420406880153508397309006440830'
+      ] : 'undefined'
+    );
+
   }
 }
 

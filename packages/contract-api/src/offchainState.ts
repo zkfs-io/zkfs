@@ -323,7 +323,10 @@ class OffchainState<KeyType, ValueType> {
       return Field(0);
     }
 
+    Circuit.log('tree value', this.value);
     const valueFields = this.valueType.toFields(this.value);
+    Circuit.log('tree value fields', valueFields);
+    Circuit.log('hash of tree value fields', Poseidon.hash(valueFields));
     return Poseidon.hash(valueFields);
   }
 
@@ -363,17 +366,8 @@ class OffchainState<KeyType, ValueType> {
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         !lastUpdatedOffchainState.value
       ) {
-        Circuit.log('Using old witness', {
-          thisKey: this.key?.toField(),
-        });
         return this.witness;
       }
-
-      Circuit.log('Ready to merge with witness', {
-        thisKey: this.key?.toField(),
-        lastUpdatedKey: lastUpdatedOffchainState.key?.toField(),
-        lastUpdateValue: lastUpdatedOffchainState.value,
-      });
 
       if (lastUpdatedOffchainState.key?.toString() === this.key?.toString()) {
         return lastUpdatedOffchainState.witness;
@@ -419,6 +413,7 @@ class OffchainState<KeyType, ValueType> {
     // take the root hash of own parent
     this.parent.contract = this.contract;
     const parentRootHash = this.parent.getRootHash();
+    Circuit.log('Parent root hash of own parent', parentRootHash);
 
     if (!parentRootHash) {
       throw errors.parentMapNotFound();
@@ -427,6 +422,7 @@ class OffchainState<KeyType, ValueType> {
     // use own witness to compute the supposed parent root hash and key
     const [computedParentRootHash, computedParentKey] =
       this.getComputedParentRootHashAndKey();
+    Circuit.log('Computed parent root hash', computedParentRootHash);
 
     // check if the computed root hash equals the existing parent root hash
     const rootHashesEqual = parentRootHash.equals(computedParentRootHash);
@@ -435,9 +431,11 @@ class OffchainState<KeyType, ValueType> {
     const keysEqual = this.key.toField().equals(computedParentKey);
 
     const isInParentTree = rootHashesEqual.and(keysEqual);
+    Circuit.log('Is in parent tree', isInParentTree)
 
     // continue checking the state's parent
     const parentIsInParentTree = this.parent.isInParentTree();
+    Circuit.log('Parent is in parent tree', parentIsInParentTree)
 
     return isInParentTree.and(parentIsInParentTree);
   }
