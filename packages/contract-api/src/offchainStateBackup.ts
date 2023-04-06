@@ -11,6 +11,7 @@ import _ from 'lodash';
 
 import type OffchainStateContract from './offchainStateContract.js';
 import OffchainStateMapRoot from './offchainStateMapRoot.js';
+import type OffchainState from './offchainState.js';
 
 interface Backup {
   initial: {
@@ -23,7 +24,8 @@ interface Backup {
   };
 }
 
-type LastUpdatedOffchainState = OffchainStateContract['lastUpdatedOffchainState'];
+type LastUpdatedOffchainState =
+  OffchainStateContract['lastUpdatedOffchainState'];
 
 interface LastUpdatedOffchainStateBackup {
   initial: {
@@ -38,6 +40,15 @@ class OffchainStateBackup {
   public static virtualStorage = new VirtualStorage();
 
   public static virtualStorageBackup: Backup = { initial: {}, latest: {} };
+
+  public static lastUpdatedOffchainState:
+    | Record<
+        // map name
+        string,
+        // instance of the last updated offchain state on that map
+        OffchainState<unknown, unknown> | undefined
+      >
+    | undefined = undefined;
 
   public static lastUpdatedOffchainStateBackup: LastUpdatedOffchainStateBackup =
     {
@@ -55,6 +66,7 @@ class OffchainStateBackup {
     );
     this.lastUpdatedOffchainStateBackup.initial.lastUpdatedOffchainState =
       _.cloneDeep(target.lastUpdatedOffchainState);
+    // try reassigning for each OffchainState in record the contract = target
   }
 
   public static backupLatest(target: OffchainStateContract) {
@@ -63,6 +75,7 @@ class OffchainStateBackup {
     );
     this.lastUpdatedOffchainStateBackup.latest.lastUpdatedOffchainState =
       _.cloneDeep(target.lastUpdatedOffchainState);
+      // try reassigning for each OffchainState in record the contract = target
   }
 
   public static restoreInitial(target: OffchainStateContract) {
@@ -76,14 +89,6 @@ class OffchainStateBackup {
     target.virtualStorage.data = JSON.parse(
       this.virtualStorageBackup.initial.data
     );
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    // if (!this.lastUpdatedOffchainStateBackup.initial.lastUpdatedOffchainState) {
-    //   throw new Error('Unable to restore off-chain state, no backup found');
-    // }
-    target.lastUpdatedOffchainState = _.cloneDeep(
-      this.lastUpdatedOffchainStateBackup.initial.lastUpdatedOffchainState
-    );
-    console.log('restore initial', target.lastUpdatedOffchainState)
 
     target.root = new OffchainStateMapRoot(target);
   }
@@ -100,13 +105,10 @@ class OffchainStateBackup {
       this.virtualStorageBackup.latest.data
     );
 
-    // // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    // if (!this.lastUpdatedOffchainStateBackup.latest.lastUpdatedOffchainState) {
-    //   throw new Error('Unable to restore off-chain state, no backup found');
-    // }
     target.lastUpdatedOffchainState = _.cloneDeep(
       this.lastUpdatedOffchainStateBackup.latest.lastUpdatedOffchainState
     );
+    // try reassigning for each OffchainState in record the contract = target
   }
 }
 

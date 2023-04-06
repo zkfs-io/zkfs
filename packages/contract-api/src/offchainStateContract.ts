@@ -45,12 +45,13 @@ class OffchainStateContract extends SmartContract {
     OffchainStateContract.offchainState.backup.virtualStorage = value;
   }
 
-  public lastUpdatedOffchainState?: Record<
-    // map name
-    string,
-    // instance of the last updated offchain state on that map
-    OffchainState<unknown, unknown> | undefined
-  >;
+  public get lastUpdatedOffchainState() {
+    return OffchainStateContract.offchainState.backup.lastUpdatedOffchainState;
+  }
+
+  public set lastUpdatedOffchainState(value) {
+    OffchainStateContract.offchainState.backup.lastUpdatedOffchainState = value;
+  }
 
   public resetLastUpdatedOffchainState() {
     this.lastUpdatedOffchainState = undefined;
