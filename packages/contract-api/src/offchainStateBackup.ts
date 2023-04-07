@@ -25,8 +25,12 @@ interface Backup {
   };
 }
 
-type LastUpdatedOffchainState =
-  OffchainStateContract['lastUpdatedOffchainState'];
+type LastUpdatedOffchainState = Record<
+  // map name
+  string,
+  // instance of the last updated offchain state on that map
+  OffchainState<unknown, unknown> | undefined
+> | undefined;
 
 interface LastUpdatedOffchainStateBackup {
   initial: {
@@ -37,19 +41,16 @@ interface LastUpdatedOffchainStateBackup {
   };
 }
 
+function cloneIfDefined(obj: LastUpdatedOffchainState) {
+  return obj ? _.cloneDeep(obj) : undefined;
+}
+
 class OffchainStateBackup {
   public static virtualStorage = new VirtualStorage();
 
   public static virtualStorageBackup: Backup = { initial: {}, latest: {} };
 
-  public static lastUpdatedOffchainState:
-    | Record<
-      // map name
-      string,
-      // instance of the last updated offchain state on that map
-      OffchainState<unknown, unknown> | undefined
-    >
-    | undefined = undefined;
+  public static lastUpdatedOffchainState: LastUpdatedOffchainState = undefined;
 
   public static lastUpdatedOffchainStateBackup: LastUpdatedOffchainStateBackup =
     {
@@ -65,39 +66,17 @@ class OffchainStateBackup {
     this.virtualStorageBackup.initial.data = JSON.stringify(
       target.virtualStorage.data
     );
-    console.log(
-      'initial state to be backed up',
-      target.lastUpdatedOffchainState
-    );
-    // console.log(
-    //   'backup initial value',
-    //   target
-    //     .getLastUpdatedOffchainState(
-    //       '26066477330778984202216424320685767887570180679420406880153508397309006440830'
-    //     )
-    //     ?.value?.toString()
-    // );
 
     this.lastUpdatedOffchainStateBackup.initial.lastUpdatedOffchainState =
-      target.lastUpdatedOffchainState
-        ? _.cloneDeep(target.lastUpdatedOffchainState)
-        : undefined;
+      cloneIfDefined(target.lastUpdatedOffchainState);
   }
 
   public static backupLatest(target: OffchainStateContract) {
     this.virtualStorageBackup.latest.data = JSON.stringify(
       target.virtualStorage.data
     );
-    this.lastUpdatedOffchainStateBackup.latest.lastUpdatedOffchainState = target.lastUpdatedOffchainState ?
-      _.cloneDeep(target.lastUpdatedOffchainState) : undefined;
-    console.log(
-      'backup latest',
-      target
-        .getLastUpdatedOffchainState(
-          '26066477330778984202216424320685767887570180679420406880153508397309006440830'
-        )
-        ?.value?.toString() ?? 'undefined'
-    );
+    this.lastUpdatedOffchainStateBackup.latest.lastUpdatedOffchainState = cloneIfDefined(target.lastUpdatedOffchainState);
+
   }
 
   public static restoreInitial(target: OffchainStateContract) {
@@ -112,20 +91,8 @@ class OffchainStateBackup {
       this.virtualStorageBackup.initial.data
     );
 
-    this.lastUpdatedOffchainState = this.lastUpdatedOffchainStateBackup.initial
-      .lastUpdatedOffchainState
-      ? _.cloneDeep(
-        this.lastUpdatedOffchainStateBackup.initial.lastUpdatedOffchainState
-      ) : undefined;
+    this.lastUpdatedOffchainState = cloneIfDefined(this.lastUpdatedOffchainStateBackup.initial.lastUpdatedOffchainState);
 
-    console.log(
-      'restore initial',
-      target
-        .getLastUpdatedOffchainState(
-          '26066477330778984202216424320685767887570180679420406880153508397309006440830'
-        )
-        ?.value?.toString() ?? 'undefined'
-    );
 
     target.root = new OffchainStateMapRoot(target);
   }
@@ -142,18 +109,10 @@ class OffchainStateBackup {
       this.virtualStorageBackup.latest.data
     );
 
-    console.log(this.lastUpdatedOffchainStateBackup.latest.lastUpdatedOffchainState)
-    target.lastUpdatedOffchainState = _.cloneDeep(
-      this.lastUpdatedOffchainStateBackup.latest.lastUpdatedOffchainState
-    );
-    console.log(
-      'restore latest',
-      target.lastUpdatedOffchainState ? target.lastUpdatedOffchainState[
-        '26066477330778984202216424320685767887570180679420406880153508397309006440830'
-      ] : 'undefined'
-    );
-
+    target.lastUpdatedOffchainState = cloneIfDefined(this.lastUpdatedOffchainStateBackup.latest.lastUpdatedOffchainState)
   }
 }
+
+
 
 export default OffchainStateBackup;

@@ -24,11 +24,9 @@ function withOffchainState(
     // @ts-expect-error due to casting 'this'
     // eslint-disable-next-line @typescript-eslint/no-invalid-this
     const self = this as OffchainStateContract;
-    console.log('before backup', self.lastUpdatedOffchainState)
-  //    self.lastUpdatedOffchainState = undefined;
+
     // backup the initial state before the method
     Circuit.asProver(() => {
-      console.log('backup initial')
       backup.backupInitial(self);
     });
 
@@ -36,12 +34,10 @@ function withOffchainState(
     originalFunction.apply(self, args);
 
     Circuit.asProver(() => {
-      console.log('backup latest')
       // save results of running the method
       backup.backupLatest(self);
 
       // reset the results of running the method using the initial state backup
-      console.log('restore initial')
       backup.restoreInitial(self);
     });
   }

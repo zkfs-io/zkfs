@@ -83,7 +83,6 @@ import {
         return witness;
       }
   
-      console.log('sharedDepth', sharedDepth);
       const replaceAtIndex = this.isLeft.length - sharedDepth - 1;
   
       let hash = leaf;
