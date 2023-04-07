@@ -3,7 +3,6 @@
 /* eslint-disable no-console */
 /* eslint-disable jest/require-top-level-describe */
 
-import OffchainStateBackup from '@zkfs/contract-api/dist/offchainStateBackup.js';
 import { AccountUpdate, UInt64 } from 'snarkyjs';
 
 import Counter from './counter.js';
@@ -31,11 +30,17 @@ describeContract<Counter>('counter', Counter, (context) => {
         })
     );
 
-    await withTimer('prove', async () => await tx.prove());
+    await withTimer(
+      'prove',
+      async () => await contractApi.prove(zkApp, async () => await tx.prove())
+    );
 
     // this tx needs .sign(), because `deploy()` adds an account update
     // that requires signature authorization
     await tx.sign([deployerKey, zkAppPrivateKey]).send();
+
+    contractApi.restoreLatest(zkApp);
+
     return tx;
   }
 
@@ -45,8 +50,6 @@ describeContract<Counter>('counter', Counter, (context) => {
     const { senderAccount, senderKey, zkApp, contractApi } = context();
 
     const tx0 = await localDeploy();
-
-    OffchainStateBackup.restoreLatest(zkApp);
 
     console.log('Counter.deploy() successful, initial offchain state:', {
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
@@ -66,11 +69,14 @@ describeContract<Counter>('counter', Counter, (context) => {
         })
     );
 
-    console.log('Counter.update(), proving');
-    await withTimer('prove', async () => await tx1.prove());
+    console.log('Counter.update(), proving tx1');
+    await withTimer(
+      'prove',
+      async () => await contractApi.prove(zkApp, async () => await tx1.prove())
+    );
     await tx1.sign([senderKey]).send();
 
-    OffchainStateBackup.restoreLatest(zkApp);
+    contractApi.restoreLatest(zkApp);
 
     const updatedCountOne = zkApp.count.get();
 
@@ -88,7 +94,7 @@ describeContract<Counter>('counter', Counter, (context) => {
       'Counter.update() the second time, updating the offchain state...'
     );
 
-    // // update transaction
+    // update transaction
     const tx2 = await withTimer(
       'transaction',
       async () =>
@@ -98,11 +104,14 @@ describeContract<Counter>('counter', Counter, (context) => {
         })
     );
 
-    console.log('proving tx2');
-    await withTimer('prove', async () => await tx2.prove());
+    console.log('Counter.update(), proving tx2');
+    await withTimer(
+      'prove',
+      async () => await contractApi.prove(zkApp, async () => await tx2.prove())
+    );
     await tx2.sign([senderKey]).send();
 
-    OffchainStateBackup.restoreLatest(zkApp);
+    contractApi.restoreLatest(zkApp);
 
     const updatedCountTwo = zkApp.count.get();
 
