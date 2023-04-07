@@ -91,7 +91,8 @@ class ContractApi {
     // eslint-disable-next-line max-len
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     contract: OffchainStateContract,
-    transactionCallback: () => Promise<Proof<ZkappPublicInput>[] | undefined[]>
+    // eslint-disable-next-line putout/putout
+    transactionCallback: () => Promise<(Proof<ZkappPublicInput> | undefined)[]>
   ) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const offchainStateBackup =
