@@ -23,6 +23,8 @@ interface Backup {
 }
 
 class OffchainStateBackup {
+  public static isProving = false;
+
   public static virtualStorage = new VirtualStorage();
 
   public static virtualStorageBackup: Backup = { initial: {}, latest: {} };
@@ -32,6 +34,10 @@ class OffchainStateBackup {
   }
 
   public static backupInitial(target: OffchainStateContract) {
+    if (this.isProving) {
+      return;
+    }
+
     this.virtualStorageBackup.initial.maps = JSON.stringify(
       target.virtualStorage.maps
     );
@@ -41,6 +47,10 @@ class OffchainStateBackup {
   }
 
   public static backupLatest(target: OffchainStateContract) {
+    if (this.isProving) {
+      return;
+    }
+
     this.virtualStorageBackup.latest.maps = JSON.stringify(
       target.virtualStorage.maps
     );
