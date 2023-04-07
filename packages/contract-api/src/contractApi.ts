@@ -1,4 +1,4 @@
-import { Mina } from 'snarkyjs';
+import { Mina, type Proof, type ZkappPublicInput } from 'snarkyjs';
 import { VirtualStorage } from '@zkfs/virtual-storage';
 
 import type OffchainStateContract from './offchainStateContract.js';
@@ -12,6 +12,22 @@ type Transaction = Awaited<ReturnType<typeof Mina.transaction>>;
  */
 class ContractApi {
   public virtualStorage = new VirtualStorage();
+
+  /**
+   * This function restores the latest offchain state of a contract.
+   *
+   * @param {OffchainStateContract} contract - The `contract` parameter is
+   *  an instance of an `OffchainStateContract` class that needs to be restored
+   *  to its latest off-chain state.
+   */
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+  public restoreLatest(contract: OffchainStateContract) {
+    // eslint-disable-next-line max-len
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+    Object.getPrototypeOf(
+      contract
+    ).constructor.offchainState.backup.restoreLatest(contract);
+  }
 
   /**
    * It assigns the virtual storage of this contract to
@@ -56,6 +72,39 @@ class ContractApi {
     return await Mina.transaction(sender, () => {
       transactionCallback();
     });
+  }
+
+  /**
+   * This function takes in a contract and a transaction callback, sets
+   * a flag to indicate that the contract is being proven, executes the
+   * transaction callback, and then sets the flag back to false.
+   *
+   * @param {OffchainStateContract} contract - OffchainStateContract
+   * the contract that you want to use
+   * @param transactionCallback
+   * This function is called to generate a proof for transaction of a contract.
+   *
+   * @returns the result of the `transactionCallback` function, which is
+   * expected to be a Promise that resolves to a Proof.
+   */
+  public async prove(
+    // eslint-disable-next-line max-len
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+    contract: OffchainStateContract,
+    // eslint-disable-next-line putout/putout
+    transactionCallback: () => Promise<(Proof<ZkappPublicInput> | undefined)[]>
+  ) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const offchainStateBackup =
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      Object.getPrototypeOf(contract).constructor.offchainState.backup;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    offchainStateBackup.isProving = true;
+    const proofedTransaction = await transactionCallback();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    offchainStateBackup.isProving = false;
+
+    return proofedTransaction;
   }
 }
 
