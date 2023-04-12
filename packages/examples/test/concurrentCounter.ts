@@ -8,6 +8,7 @@ import {
   OffchainStateMapRoot,
   withOffchainState,
 } from '@zkfs/contract-api';
+import { safeUint64Sub } from '@zkfs/safe-math';
 import {
   Circuit,
   Field,
@@ -113,21 +114,10 @@ class ConcurrentCounter extends OffchainStateContract {
 
     const [counter] = this.getCounter(id);
 
-    /**
-     * If the counter needs to be decrement, make sure
-     * UInt64 won't underflow by incrementing it to the
-     * value it needs to be decremented by later.
-     */
-    const decrementFrom = Circuit.if(
-      counter.lessThan(by),
-      counter.add(by),
-      counter
-    );
-
     const newCounter = Circuit.if(
       action.type.equals(Action.types.increment),
       counter.add(by),
-      decrementFrom.sub(by)
+      safeUint64Sub(counter, by)
     );
 
     this.setCounter(id, newCounter);
