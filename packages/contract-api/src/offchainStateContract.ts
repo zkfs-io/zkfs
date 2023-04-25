@@ -1,5 +1,3 @@
-/* eslint-disable lines-around-comment */
-/* eslint-disable sort-class-members/sort-class-members */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable new-cap */
 import { Field, SmartContract, State, state } from 'snarkyjs';
