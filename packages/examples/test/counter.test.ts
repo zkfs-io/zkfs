@@ -3,7 +3,8 @@
 /* eslint-disable no-console */
 /* eslint-disable jest/require-top-level-describe */
 
-import { AccountUpdate, UInt64 } from 'snarkyjs';
+import { AccountUpdate, UInt64, MerkleMap, Poseidon } from 'snarkyjs';
+import { Key } from '@zkfs/contract-api';
 
 import Counter from './counter.js';
 import describeContract, { withTimer } from './describeContract.js';
@@ -21,6 +22,7 @@ describeContract<Counter>('counter', Counter, (context) => {
       contractApi,
     } = context();
 
+    zkApp.lastUpdatedOffchainState = undefined;
     const tx = await withTimer(
       'transaction',
       async () =>

@@ -3,11 +3,17 @@
 /* eslint-disable no-console */
 /* eslint-disable jest/require-top-level-describe */
 
-import { AccountUpdate, type PublicKey, UInt64 } from 'snarkyjs';
+import {
+  AccountUpdate,
+  type PublicKey,
+  UInt64,
+  MerkleMap,
+  Poseidon,
+} from 'snarkyjs';
+import { Key } from '@zkfs/contract-api';
 
 import PiggyBank from './piggyBank.js';
 import describeContract, { withTimer } from './describeContract.js';
-import { Key } from '@zkfs/contract-api';
 
 // eslint-disable-next-line jest/require-hook
 describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
@@ -19,6 +25,8 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
       zkApp,
       contractApi,
     } = context();
+
+    zkApp.resetLastUpdatedOffchainState();
 
     const tx = await withTimer(
       'transaction',

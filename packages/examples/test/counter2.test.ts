@@ -4,8 +4,7 @@
 /* eslint-disable jest/require-top-level-describe */
 
 import { Key } from '@zkfs/contract-api';
-import OffchainStateBackup from '@zkfs/contract-api/dist/offchainStateBackup.js';
-import { AccountUpdate, Circuit, MerkleMap, Poseidon, UInt64 } from 'snarkyjs';
+import { AccountUpdate, MerkleMap, Poseidon, UInt64 } from 'snarkyjs';
 
 import Counter2 from './counter2.js';
 import describeContract, { withTimer } from './describeContract.js';
@@ -22,7 +21,9 @@ describeContract<Counter2>('counter', Counter2, (context) => {
       zkApp,
       contractApi,
     } = context();
+
     zkApp.lastUpdatedOffchainState = undefined;
+
     const tx = await withTimer(
       'transaction',
       async () =>
@@ -32,22 +33,26 @@ describeContract<Counter2>('counter', Counter2, (context) => {
         })
     );
 
-    await withTimer('prove', async () => await tx.prove());
+    await withTimer(
+      'prove',
+      async () => await contractApi.prove(zkApp, async () => await tx.prove())
+    );
 
     await tx.sign([deployerKey, zkAppPrivateKey]).send();
+    contractApi.restoreLatest(zkApp);
+
     return tx;
   }
 
   it('correctly updates the count state on the `Counter` smart contract', async () => {
     expect.assertions(1);
 
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     const { map, count1, count2 } = manualMapTesting();
 
     const { senderAccount, senderKey, zkApp, contractApi } = context();
 
     const tx0 = await localDeploy();
-
-    OffchainStateBackup.restoreLatest(zkApp);
 
     console.log('Counter.deploy() successful, initial offchain state:', {
       count1: zkApp.count1.get().toString(),
@@ -67,10 +72,13 @@ describeContract<Counter2>('counter', Counter2, (context) => {
         })
     );
 
-    console.log('Counter.update(), proving');
-    await withTimer('prove', async () => await tx1.prove());
+    await withTimer(
+      'prove',
+      async () => await contractApi.prove(zkApp, async () => await tx1.prove())
+    );
     await tx1.sign([senderKey]).send();
-    OffchainStateBackup.restoreLatest(zkApp);
+
+    contractApi.restoreLatest(zkApp);
 
     console.log('Counter.update() successful, new offchain state:', {
       count1: zkApp.count1.get().toString(),
@@ -81,11 +89,12 @@ describeContract<Counter2>('counter', Counter2, (context) => {
       tx: tx1.toPretty(),
     });
 
+
     console.log(
       'Counter.update() the second time, updating the offchain state...'
     );
 
-    // // update transaction
+    // update transaction
     const tx2 = await withTimer(
       'transaction',
       async () =>
@@ -95,11 +104,13 @@ describeContract<Counter2>('counter', Counter2, (context) => {
         })
     );
 
-    console.log('proving tx2');
-    await withTimer('prove', async () => await tx2.prove());
+    await withTimer(
+      'prove',
+      async () => await contractApi.prove(zkApp, async () => await tx2.prove())
+    );
     await tx2.sign([senderKey]).send();
 
-    OffchainStateBackup.restoreLatest(zkApp);
+    contractApi.restoreLatest(zkApp);
 
     console.log('Counter.update() 2 successful, new offchain state:', {
       count1: zkApp.count1.get().toString(),

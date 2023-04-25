@@ -112,6 +112,9 @@ class ConcurrentCounter extends OffchainStateContract {
   public applyAction(action: Action) {
     const { id, by } = action.payload;
 
+    Circuit.log(this.lastUpdatedOffchainState);
+
+    Circuit.log('getting counter');
     const [counter] = this.getCounter(id);
 
     const newCounter = Circuit.if(
@@ -120,6 +123,7 @@ class ConcurrentCounter extends OffchainStateContract {
       safeUint64Sub(counter, by)
     );
 
+    Circuit.log('setting counter')
     this.setCounter(id, newCounter);
   }
 
