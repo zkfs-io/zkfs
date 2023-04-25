@@ -208,13 +208,13 @@ class OffchainState<KeyType, ValueType> {
         throw errors.keyNotFound();
       }
 
+      // keeping this here for final review
       // keep re-using the same witness, if it exists
       // if (this.witness) {
       //   Circuit.log('Reusing old witness for key: ', this.key.toField());
       //   return this.witness;
       // }
 
-      Circuit.log('not reusing old witness, getting witness from virtual storage')
       const witness = this.contract.virtualStorage.getWitness(
         this.contract.address.toBase58(),
         this.parent.mapName.toString(),
@@ -361,16 +361,13 @@ class OffchainState<KeyType, ValueType> {
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         !lastUpdatedOffchainState.value
       ) {
-        Circuit.log('nothing to merge with, returning existing witness');
         return this.witness;
       }
 
       if (lastUpdatedOffchainState.key?.toString() === this.key?.toString()) {
-        Circuit.log('last updated offchain state is the same as current state');
         return lastUpdatedOffchainState.witness;
       }
 
-      Circuit.log('merging witnesses');
       return mergeMerkleMapWitnesses(
         this.witness,
         lastUpdatedOffchainState.treeValue,

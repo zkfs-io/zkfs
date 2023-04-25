@@ -2,8 +2,7 @@
 /* eslint-disable no-console */
 /* eslint-disable jest/require-top-level-describe */
 /* eslint-disable max-statements */
-import { AccountUpdate, UInt64, MerkleMap, Poseidon } from 'snarkyjs';
-import { Key } from '@zkfs/contract-api';
+import { AccountUpdate, UInt64 } from 'snarkyjs';
 
 import ConcurrentCounter from './concurrentCounter.js';
 import describeContract, { withTimer } from './describeContract.js';
@@ -21,8 +20,6 @@ describeContract<ConcurrentCounter>(
         zkApp,
         contractApi,
       } = context();
-
-      zkApp.lastUpdatedOffchainState = undefined;
 
       const tx = await contractApi.transaction(zkApp, deployerAccount, () => {
         AccountUpdate.fundNewAccount(deployerAccount);
@@ -44,20 +41,7 @@ describeContract<ConcurrentCounter>(
     }
 
     it('correctly updates the count state on the `ConcurrentCounter` smart contract', async () => {
-      expect.assertions(2);
-
-      // temporary manual testing
-      const rootMap = new MerkleMap();
-      const countersKeyInRoot = Key.fromString('counters').toField();
-      const nestedMap = new MerkleMap();
-      const keyInNestedMap = ConcurrentCounter.idToKey(
-        UInt64.from(0)
-      ).toField();
-      nestedMap.set(keyInNestedMap, Poseidon.hash(UInt64.from(1).toFields()))
-      rootMap.set(
-        countersKeyInRoot,
-        Poseidon.hash(nestedMap.getRoot().toFields())
-      );
+      expect.assertions(1);
 
       const { senderAccount, senderKey, zkApp, contractApi } = context();
 

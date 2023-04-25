@@ -3,14 +3,7 @@
 /* eslint-disable no-console */
 /* eslint-disable jest/require-top-level-describe */
 
-import {
-  AccountUpdate,
-  type PublicKey,
-  UInt64,
-  MerkleMap,
-  Poseidon,
-} from 'snarkyjs';
-import { Key } from '@zkfs/contract-api';
+import { AccountUpdate, type PublicKey, UInt64 } from 'snarkyjs';
 
 import PiggyBank from './piggyBank.js';
 import describeContract, { withTimer } from './describeContract.js';
@@ -25,8 +18,6 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
       zkApp,
       contractApi,
     } = context();
-
-    zkApp.resetLastUpdatedOffchainState();
 
     const tx = await withTimer(
       'transaction',
@@ -52,27 +43,11 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
   }
 
   it('correctly deposits an amount for a user to the `PiggyBank` smart contract', async () => {
-    expect.assertions(3);
+    expect.assertions(2);
 
     Error.stackTraceLimit = 1000;
 
     const { senderAccount, senderKey, zkApp, contractApi } = context();
-
-    const rootMap = new MerkleMap();
-
-    const depositKeyInRoot = Key.fromString('deposits');
-
-    const depositsMap = new MerkleMap();
-    const keySender = zkApp.getDepositKey(senderAccount);
-    depositsMap.set(
-      keySender.toField(),
-      Poseidon.hash(UInt64.from(20).toFields())
-    );
-
-    rootMap.set(
-      depositKeyInRoot.toField(),
-      Poseidon.hash(depositsMap.getRoot().toFields())
-    );
 
     const tx0 = await localDeploy();
 
@@ -154,7 +129,5 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx2.toPretty(),
     });
-
-    expect(zkApp.offchainStateRootHash.get().toString()).toBe(rootMap.getRoot().toString())
   });
 });

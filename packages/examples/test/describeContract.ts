@@ -82,6 +82,14 @@ function describeContract<ZkApp extends OffchainStateContract>(
       const zkAppAddress = zkAppPrivateKey.toPublicKey();
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       const zkApp = new Contract(zkAppAddress) as ZkApp;
+
+      // eslint-disable-next-line max-len
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, putout/putout
+      if (hasProofsEnabled) {
+        // needs to be done because of Contract.compile()
+        zkApp.resetLastUpdatedOffchainState();
+      }
+
       const contractApi = new ContractApi();
 
       context = {

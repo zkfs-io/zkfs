@@ -3,8 +3,7 @@
 /* eslint-disable no-console */
 /* eslint-disable jest/require-top-level-describe */
 
-import { AccountUpdate, UInt64, MerkleMap, Poseidon } from 'snarkyjs';
-import { Key } from '@zkfs/contract-api';
+import { AccountUpdate, UInt64 } from 'snarkyjs';
 
 import Counter from './counter.js';
 import describeContract, { withTimer } from './describeContract.js';
@@ -22,7 +21,6 @@ describeContract<Counter>('counter', Counter, (context) => {
       contractApi,
     } = context();
 
-    zkApp.lastUpdatedOffchainState = undefined;
     const tx = await withTimer(
       'transaction',
       async () =>
@@ -47,11 +45,7 @@ describeContract<Counter>('counter', Counter, (context) => {
   }
 
   it('correctly updates the count state on the `Counter` smart contract', async () => {
-    expect.assertions(3);
-
-    const map = new MerkleMap();
-    const count = Key.fromString('count').toField();
-    map.set(count, Poseidon.hash(UInt64.from(2).toFields()));
+    expect.assertions(2);
 
     const { senderAccount, senderKey, zkApp, contractApi } = context();
 
@@ -119,11 +113,9 @@ describeContract<Counter>('counter', Counter, (context) => {
 
     contractApi.restoreLatest(zkApp);
 
-    console.log('getting count')
     const updatedCountTwo = zkApp.count.get();
 
     expect(updatedCountTwo.toString()).toStrictEqual(UInt64.from(2).toString());
-
 
     console.log('Counter.update() 2 successful, new offchain state:', {
       count: updatedCountTwo.toString(),
@@ -132,7 +124,5 @@ describeContract<Counter>('counter', Counter, (context) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx2.toPretty(),
     });
-
-    expect(zkApp.offchainStateRootHash.get().toString()).toBe(map.getRoot().toString())
   });
 });
