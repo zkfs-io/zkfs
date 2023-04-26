@@ -12,13 +12,71 @@ import type OrbitDbStoragePartial from '../../../../storage-adapters/orbit-db/sr
 // eslint-disable-next-line import/no-relative-packages
 import type { ZkfsNode } from '../../../../node/src/interface.js';
 
+interface WitnessResponseData {
+  metadata: {
+    root: string;
+    value: string[];
+  };
+  witness: string;
+}
+
+// eslint-disable-next-line max-params
+function createDataObject(
+  storage: OrbitDbStoragePartial,
+  account: string,
+  mapName: string,
+  key: string
+): WitnessResponseData {
+  const map = storage.virtualStorage.getMap(account, mapName);
+  const root = map.getRoot().toString();
+  const value = storage.virtualStorage.getSerializedValue(
+    account,
+    mapName,
+    key
+  );
+  const witness = storage.virtualStorage.getSerializedWitness(
+    account,
+    mapName,
+    key
+  );
+
+  return {
+    metadata: {
+      root,
+      value: value ?? [],
+    },
+
+    witness,
+  };
+}
+
+function createResponse(data: WitnessResponseData): ResponseSchemaType {
+  const serializedData = JSON.stringify(data);
+
+  return {
+    payload: { data: serializedData },
+  };
+}
+
+function encodeMessage(response: ResponseSchemaType): Uint8Array {
+  const message = JSON.stringify(response);
+  return new TextEncoder().encode(message);
+}
+
 async function handleGetWitnessRequest(
   zkfsNode: ZkfsNode<OrbitDbStoragePartial>,
   request: RequestSchemaType
 ) {
-  const { account, key: keys } = request.payload;
+  const { account, key: combinedKey } = request.payload;
+  const [mapName, key] = combinedKey.split('-');
+  const { storage } = zkfsNode;
 
+  const data = createDataObject(storage, account, mapName, key);
+  const response = createResponse(data);
+  const encodedMessage = encodeMessage(response);
 
+  const topic = responseTopicPrefix + request.id;
+  await zkfsNode.storage.config.ipfs.pubsub.publish(topic, encodedMessage);
 }
 
 export default handleGetWitnessRequest;
