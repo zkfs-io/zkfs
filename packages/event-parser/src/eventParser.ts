@@ -1,9 +1,5 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable new-cap */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 import type { ZkfsNode } from '@zkfs/node';
@@ -124,7 +120,7 @@ class EventParser {
     this.setLastSeen(publicKey, lastSeen);
   }
 
-  public async fetchEventsForAddressLocal(
+  public async fetchAndProcessLocalEventsForAddress(
     publicKey: PublicKey,
     zkfsNode: ZkfsNode<OrbitDbStoragePartial>
   ) {
@@ -140,6 +136,10 @@ class EventParser {
     this.setLastSeen(publicKey, lastSeen);
   }
 
+  /**
+   * This function fetches local events manually,
+   * when testing with LocalBlockchain.
+   */
   public async fetchLocalEvents() {
     if (this.zkfsNode === undefined) {
       throw new Error('Please call initialize first');
@@ -151,7 +151,7 @@ class EventParser {
         async (address) =>
           // eslint-disable-next-line max-len
           // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-          await this.fetchEventsForAddressLocal(
+          await this.fetchAndProcessLocalEventsForAddress(
             PublicKey.fromBase58(address),
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             this.zkfsNode!
