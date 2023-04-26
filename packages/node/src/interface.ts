@@ -77,5 +77,5 @@ export type {
   ValueRecord,
   Address,
   EventParserAdapter,
-  ZkfsWriterNodeConfig
+  ZkfsWriterNodeConfig,
 };

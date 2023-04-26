@@ -26,6 +26,7 @@
   "devDependencies": {
     "@types/ipfs-core": "npm:ipfs-core-types@^0.14.0",
     "@types/lodash": "^4.14.191",
-    "eslint": "^8.33.0"
+    "eslint": "^8.33.0",
+    "snarkyjs": "0.9.5"
   }
 }
