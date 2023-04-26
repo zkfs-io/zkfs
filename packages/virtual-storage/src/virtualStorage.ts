@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 import { Poseidon, Field, MerkleMap, type MerkleMapWitness } from 'snarkyjs';
 
-import { serializeMap, deserializeMap } from './mapUtils.js';
+import { serializeMap, deserializeMap, serializeWitness } from './mapUtils.js';
 
 type ValueRecord = Record<string, string[] | undefined>;
 
@@ -13,10 +13,10 @@ class VirtualStorage {
   // address -> map name -> serialized map as string
   public maps: {
     [key: string]:
-      | {
-          [key: string]: string | undefined;
-        }
-      | undefined;
+    | {
+      [key: string]: string | undefined;
+    }
+    | undefined;
   } = {};
 
   // address -> { key: value }
@@ -142,6 +142,15 @@ class VirtualStorage {
     // tree only stores hashed values, we can retrieve the witness by a key
     // eslint-disable-next-line new-cap
     return map.getWitness(Field(key));
+  }
+
+  public getSerializedWitness(
+    address: string,
+    mapName: string,
+    key: string
+  ): string {
+    const witness = this.getWitness(address, mapName, key);
+    return serializeWitness(witness);
   }
 
   /**
