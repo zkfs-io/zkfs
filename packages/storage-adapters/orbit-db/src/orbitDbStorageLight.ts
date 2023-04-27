@@ -3,11 +3,11 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable unicorn/prevent-abbreviations */
+// eslint-disable-next-line putout/putout
 import { TextEncoder, TextDecoder } from 'node:util';
 
 import { v4 as uuidv4 } from 'uuid';
 import type { Message } from '@libp2p/interface-pubsub';
-import type { VirtualStorage } from '@zkfs/virtual-storage';
 
 import {
   type RequestSchemaType,
@@ -16,6 +16,7 @@ import {
   responseSchema,
   validatorFactory,
   responseTopicPrefix,
+  WitnessResponseData,
   // eslint-disable-next-line import/no-relative-packages
 } from '../../../services/orbit-db-data-pubsub/src/schemas.js';
 
@@ -77,6 +78,15 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     return new TextEncoder().encode(JSON.stringify(requestBody));
   }
 
+  public createGetWitnessRequest(id: string, account: Address, key: string) {
+    const requestBody: RequestSchemaType = {
+      id,
+      type: 'getWitness',
+      payload: { key, account },
+    };
+    return new TextEncoder().encode(JSON.stringify(requestBody));
+  }
+
   /**
    * It takes a PubSub message, decodes it, validates it, and returns the data
    *
@@ -96,12 +106,66 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  public async getWitness(
+  public validateWitnessInLightClient(data: string) {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const { witness, metadata } = JSON.parse(data) as WitnessResponseData;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const computedRoot =
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      this.virtualStorage.computeRootFromSerializedValueWitness(
+        witness,
+        metadata.value
+      );
+    const { root } = metadata;
+
+    if (computedRoot === root) {
+      // todo: save witness to virtual storage after merge of PR "witness merging"
+    }
+    return witness;
+  };
+
+  public override async getWitness(
     account: string,
-    mapName: string
+    mapName: string,
+    key: string
   ): Promise<string | undefined> {
-    throw new Error('Not implemented');
+    // eslint-disable-next-line promise/avoid-new
+    return await new Promise<string | undefined>(async (resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        // eslint-disable-next-line prefer-promise-reject-errors
+        reject(undefined);
+      }, this.lightClientConfig.pubsub.timeout);
+
+      // subscribe to response
+      const onResponseHandler = async (msg: Message) => {
+        clearTimeout(timeoutId);
+
+        const data = this.getDataFromPubSubMessage(msg);
+        if (data === undefined) {
+          resolve(undefined);
+        } else {
+          const witness = this.validateWitnessInLightClient(data);
+          resolve(witness);
+        }
+      };
+
+      try {
+        const id = uuidv4();
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+        await this.config.ipfs.pubsub.subscribe(
+          responseTopicPrefix + id,
+          onResponseHandler
+        );
+
+        // publish request
+        const combinedKey = this.virtualStorage.getCombinedKey(mapName, key);
+        const request = this.createGetWitnessRequest(id, account, combinedKey);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+        await this.config.ipfs.pubsub.publish(requestTopic, request);
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
   /**

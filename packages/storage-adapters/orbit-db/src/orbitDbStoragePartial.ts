@@ -99,9 +99,7 @@ class OrbitDbStoragePartial implements StorageAdapter {
     mapName: string,
     key: string
   ): Promise<string | undefined> {
-    return JSON.stringify(
-      this.virtualStorage.getWitness(account, mapName, key)
-    );
+    return this.virtualStorage.getSerializedWitness(account, mapName, key);
   }
 
   public async setValue(
@@ -109,7 +107,6 @@ class OrbitDbStoragePartial implements StorageAdapter {
     valueRecord: ValueRecord
   ): Promise<void> {
     const [[key, value]] = Object.entries(valueRecord);
-    console.log('setting value', valueRecord);
     // todo check whether store exists before setting
     // shouldn't be possible if store was not registered
     await this.getValueStore(account)?.set(key, JSON.stringify(value));
