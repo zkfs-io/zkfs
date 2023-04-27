@@ -3,9 +3,7 @@
 import {
   Field,
   MerkleMap,
-  MerkleWitness,
   Bool,
-  arrayProp,
   MerkleMapWitness,
 } from 'snarkyjs';
 
@@ -29,7 +27,6 @@ interface SerializedWitness {
   isLefts: string[];
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
 function serializeMap(map: MerkleMap): string {
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const tree = map.tree as unknown as SerializableTree;
