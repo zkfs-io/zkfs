@@ -6,19 +6,12 @@ import {
   type RequestSchemaType,
   type ResponseSchemaType,
   responseTopicPrefix,
+  type WitnessResponseData,
 } from '../schemas.js';
 // eslint-disable-next-line import/no-relative-packages
 import type OrbitDbStoragePartial from '../../../../storage-adapters/orbit-db/src/orbitDbStoragePartial.js';
 // eslint-disable-next-line import/no-relative-packages
 import type { ZkfsNode } from '../../../../node/src/interface.js';
-
-interface WitnessResponseData {
-  metadata: {
-    root: string;
-    value: string[];
-  };
-  witness: string;
-}
 
 // eslint-disable-next-line max-params
 function createDataObject(
@@ -80,3 +73,4 @@ async function handleGetWitnessRequest(
 }
 
 export default handleGetWitnessRequest;
+export type { WitnessResponseData };

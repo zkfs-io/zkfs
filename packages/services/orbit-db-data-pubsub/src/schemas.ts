@@ -34,6 +34,18 @@ const responseSchema = Type.Object({
 });
 type ResponseSchemaType = Static<typeof responseSchema>;
 
+/**
+ * The `WitnessResponseData` interface is defining the structure of the
+ * data that will be returned in the `witness` field of the response payload.
+ */
+interface WitnessResponseData {
+  metadata: {
+    root: string;
+    value: string[];
+  };
+  witness: string;
+}
+
 interface ValidatorFactoryReturn<T> {
   schema: TObject;
   verify: (data: T) => T;
@@ -68,4 +80,5 @@ export {
   responseSchema,
   requestTopic,
   responseTopicPrefix,
+  type WitnessResponseData
 };
