@@ -9,6 +9,7 @@ import { Field, type Mina, PublicKey, isReady, UInt32 } from 'snarkyjs';
 import sortEventsAscending from './sortEventsAscending.js';
 import type Events from './types.js';
 import Trigger from './trigger.js';
+import { ValueRecord } from '@zkfs/node/dist/interface.js';
 
 const defaultOption = {
   isLocalTesting: false,
@@ -24,14 +25,14 @@ class EventParser {
     public options = defaultOption
   ) { }
 
-  public processEvents(
+  // eslint-disable-next-line max-statements
+  public async processEvents(
     events: Events,
     zkfsNode: ZkfsNode<OrbitDbStoragePartial>,
     publicKey: PublicKey
   ) {
-    events.forEach((eventsPerBlock) => {
-      eventsPerBlock.events.forEach((event) => {
-        console.log(event);
+    for (const eventsPerBlock of events) {
+      for (const event of eventsPerBlock.events) {
         const depth = Number(event[0]);
 
         const map = event[depth - 1];
@@ -39,19 +40,30 @@ class EventParser {
         const valueStartsFromIndex = depth + 1;
         const value = event.slice(valueStartsFromIndex);
 
+        // update the stored serialized merkle map
         zkfsNode.storage.virtualStorage.setSerializedValue(
           publicKey.toBase58(),
           map,
           keyInMap,
           value
         );
-      });
-    });
+
+        // save the serialized value to DB
+        const combinedKey = zkfsNode.storage.virtualStorage.getCombinedKey(
+          map,
+          keyInMap
+        );
+        const valueRecord: ValueRecord = { [String(combinedKey)]: value };
+        // eslint-disable-next-line no-await-in-loop
+        await zkfsNode.storage.setValue(publicKey.toBase58(), valueRecord);
+      }
+    }
   }
 
   public getLastProcessedBlock(events: Events): UInt32 {
     // eslint-disable-next-line putout/putout
-    return events[events.length - 1].blockHeight;
+    // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
+    return events.at(-1).blockHeight;
   }
 
   public setLastSeen(publicKey: PublicKey, lastSeen: UInt32) {
@@ -114,7 +126,7 @@ class EventParser {
     );
 
     const sortedEvents = sortEventsAscending(events);
-    this.processEvents(sortedEvents, zkfsNode, publicKey);
+    await this.processEvents(sortedEvents, zkfsNode, publicKey);
 
     const lastSeen = this.getLastProcessedBlock(sortedEvents);
     this.setLastSeen(publicKey, lastSeen);
@@ -130,7 +142,7 @@ class EventParser {
       sortedEvents,
       this.getLastSeen(publicKey)
     );
-    this.processEvents(filteredEvents, zkfsNode, publicKey);
+    await this.processEvents(filteredEvents, zkfsNode, publicKey);
 
     const lastSeen = this.getLastProcessedBlock(filteredEvents);
     this.setLastSeen(publicKey, lastSeen);
