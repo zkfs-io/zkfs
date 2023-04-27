@@ -10,21 +10,22 @@ import { create as createIpfs } from 'ipfs-core';
 import { OrbitDbDataPubSub } from '@zkfs/orbit-db-data-pubsub';
 import { VirtualStorage } from '@zkfs/virtual-storage';
 import { EventParser } from '@zkfs/event-parser';
-
 import { Mina } from 'snarkyjs';
+
 import {
   createIpfsConfigEmptyBootstrap,
   createIpfsConfigWithBootstrap,
 } from '../test/configs.js';
-
 import { piggyBankTestData } from '../test/testData.js';
+
 import ZkfsNode from './zkfsNode.js';
 import type { ZkfsNodeConfig, ZkfsWriterNodeConfig } from './interface.js';
 
-
 describe('zkfsNode', () => {
   it('can set data on server database and get it on light client', async () => {
-    expect.assertions(0);
+    expect.assertions(1);
+
+    const account = 'B62qiyp9W7f4j9gf1Y5zrKGGxih9KwMb1mtpFsUb1QRPBfkKQ17SPAY';
 
     // setup zkfs partial node
     const ipfsServer = await createIpfs(
@@ -40,7 +41,7 @@ describe('zkfsNode', () => {
     const ipfsServerId = id.toString();
     const storagePartial = new OrbitDbStoragePartial({
       ipfs: ipfsServer,
-      addresses: ['B62qiyp9W7f4j9gf1Y5zrKGGxih9KwMb1mtpFsUb1QRPBfkKQ17SPAY'],
+      addresses: [account],
       bootstrap: { interval: 1000, timeout: 15_000 },
       virtualStorage,
     });
@@ -85,5 +86,30 @@ describe('zkfsNode', () => {
     //   '2879140883079234083739072433302655428620676912090406234791507627086874611706'
     // ));
 
+    const mapName = piggyBankTestData.maps.depositsMap.name;
+    const key =
+      '2879140883079234083739072433302655428620676912090406234791507627086874611706';
+    const combinedKey = virtualStorage.getCombinedKey(mapName, key);
+
+    const serializedWitness = await lightClientNode.storage.getWitness(
+      account,
+      mapName,
+      key
+    );
+
+    const valueRecord = await lightClientNode.storage.getValues(account, [
+      combinedKey,
+    ]);
+
+    // eslint-disable-next-line max-len
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+    const computedRoot = virtualStorage.computeRootFromSerializedValueWitness(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      serializedWitness!,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      valueRecord![combinedKey]
+    );
+
+    expect(computedRoot).toStrictEqual(piggyBankTestData.maps.depositsMap.hash);
   }, 20_000);
 });
