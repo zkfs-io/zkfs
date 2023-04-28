@@ -1,12 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
-/* eslint-disable new-cap */
-/* eslint-disable max-statements */
-import { isReady, Mina } from 'snarkyjs';
+import { isReady, type Mina } from 'snarkyjs';
 import { OrbitDbStoragePartial } from '@zkfs/storage-orbit-db';
 import { VirtualStorage } from '@zkfs/virtual-storage';
 import type { IPFS } from 'ipfs-core';
 import { ZkfsNode } from '@zkfs/node';
+import { jest } from '@jest/globals';
 
 import {
   counterTestData,
@@ -15,6 +13,7 @@ import {
 } from '../test/eventData.js';
 
 import EventParser from './eventParser.js';
+import { ValueRecord } from '@zkfs/node/src/interface.js';
 
 describe('eventParser', () => {
   beforeAll(async () => {
@@ -38,7 +37,13 @@ describe('eventParser', () => {
   });
 
   it('parses events for piggyBank example', async () => {
-    expect.assertions(2);
+    expect.assertions(3);
+
+    // eslint-disable-next-line putout/putout
+    const mockStorageSetValue = jest.fn(
+      async (account: string, valueRecord: ValueRecord) => { }
+    );
+    storage.setValue = mockStorageSetValue;
 
     const mockMina = {
       fetchEvents: () => piggyBankTestData.events,
@@ -53,6 +58,7 @@ describe('eventParser', () => {
       // @ts-expect-error - Add generic type to EventParser
       eventParser,
     });
+
     await eventParser.initialize(zkfsNode);
 
     await eventParser.fetchLocalEvents();
@@ -74,10 +80,18 @@ describe('eventParser', () => {
     expect(nestedMap.getRoot().toString()).toBe(
       piggyBankTestData.maps.depositsMap.hash
     );
+
+    expect(mockStorageSetValue.mock.calls).toHaveLength(5);
   });
 
   it('parses events for counter example', async () => {
-    expect.assertions(1);
+    expect.assertions(2);
+
+    // eslint-disable-next-line putout/putout
+    const mockStorageSetValue = jest.fn(
+      async (account: string, valueRecord: ValueRecord) => { }
+    );
+    storage.setValue = mockStorageSetValue;
 
     const mockMina = {
       fetchEvents: () => counterTestData.events,
@@ -104,10 +118,18 @@ describe('eventParser', () => {
     expect(rootMap.getRoot().toString()).toBe(
       counterTestData.maps.rootMap.hash
     );
+
+    expect(mockStorageSetValue.mock.calls).toHaveLength(3);
   });
 
   it('parses events for concurrentCounter example', async () => {
-    expect.assertions(2);
+    expect.assertions(3);
+
+    // eslint-disable-next-line putout/putout
+    const mockStorageSetValue = jest.fn(
+      async (account: string, valueRecord: ValueRecord) => { }
+    );
+    storage.setValue = mockStorageSetValue;
 
     const mockMina = {
       fetchEvents: () => concurrentCounterTestData.events,
@@ -143,5 +165,7 @@ describe('eventParser', () => {
     expect(counters.getRoot().toString()).toBe(
       concurrentCounterTestData.maps.countersMap.hash
     );
+
+    expect(mockStorageSetValue.mock.calls).toHaveLength(3);
   });
 });
