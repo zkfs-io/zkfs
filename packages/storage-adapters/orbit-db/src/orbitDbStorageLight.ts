@@ -3,11 +3,11 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable unicorn/prevent-abbreviations */
-// eslint-disable-next-line putout/putout
 import { TextEncoder, TextDecoder } from 'node:util';
 
 import { v4 as uuidv4 } from 'uuid';
 import type { Message } from '@libp2p/interface-pubsub';
+import { VirtualStorage } from '@zkfs/virtual-storage';
 
 import {
   type RequestSchemaType,
@@ -16,7 +16,7 @@ import {
   responseSchema,
   validatorFactory,
   responseTopicPrefix,
-  WitnessResponseData,
+  type WitnessResponseData,
   // eslint-disable-next-line import/no-relative-packages
 } from '../../../services/orbit-db-data-pubsub/src/schemas.js';
 
@@ -112,7 +112,7 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const computedRoot =
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      this.virtualStorage.computeRootFromSerializedValueWitness(
+      VirtualStorage.computeRootFromSerializedValueWitness(
         witness,
         metadata.value
       );

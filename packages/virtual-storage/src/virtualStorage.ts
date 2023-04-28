@@ -15,6 +15,34 @@ type ValueRecord = Record<string, string[] | undefined>;
  * updates during contract execution or event processing.
  */
 class VirtualStorage {
+  
+  /**
+   * This function computes a root from a serialized witness and
+   * serialized value
+   *
+   * @param {string} serializedWitness - A string representing a serialized
+   * witness object.
+   * @param {string[]} serializedValue - An array of strings representing
+   * the serialized values that will be used to compute the root.
+   *
+   * @returns a string which represents the computed root from the serialized
+   * witness and serialized value.
+   */
+  public static computeRootFromSerializedValueWitness(
+    serializedWitness: string,
+    serializedValue: string[]
+  ): string {
+    const witness = deserializeWitness(serializedWitness);
+
+    const valueFields = serializedValue.map((fieldString) =>
+      // eslint-disable-next-line new-cap
+      Field(fieldString)
+    );
+
+    const valueHash = Poseidon.hash(valueFields);
+    return witness.computeRootAndKey(valueHash)[0].toString();
+  }
+
   // address -> map name -> serialized map as string
   public maps: {
     [key: string]:
@@ -156,33 +184,6 @@ class VirtualStorage {
   ): string {
     const witness = this.getWitness(address, mapName, key);
     return serializeWitness(witness);
-  }
-
-  /**
-   * This function computes a root from a serialized witness and
-   * serialized value
-   *
-   * @param {string} serializedWitness - A string representing a serialized
-   * witness object.
-   * @param {string[]} serializedValue - An array of strings representing
-   * the serialized values that will be used to compute the root.
-   *
-   * @returns a string which represents the computed root from the serialized
-   * witness and serialized value.
-   */
-  public computeRootFromSerializedValueWitness(
-    serializedWitness: string,
-    serializedValue: string[]
-  ): string {
-    const witness = deserializeWitness(serializedWitness);
-
-    const valueFields = serializedValue.map((fieldString) =>
-      // eslint-disable-next-line new-cap
-      Field(fieldString)
-    );
-
-    const valueHash = Poseidon.hash(valueFields);
-    return witness.computeRootAndKey(valueHash)[0].toString();
   }
 
   /**

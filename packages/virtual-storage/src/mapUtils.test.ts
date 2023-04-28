@@ -1,7 +1,12 @@
 /* eslint-disable new-cap */
 import { Field, isReady, MerkleMap } from 'snarkyjs';
 
-import { serializeMap, deserializeMap, serializeWitness, deserializeWitness } from './mapUtils.js';
+import {
+  serializeMap,
+  deserializeMap,
+  serializeWitness,
+  deserializeWitness,
+} from './mapUtils.js';
 
 describe('mapUtils', () => {
   beforeAll(async () => {
