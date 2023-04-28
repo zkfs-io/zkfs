@@ -13,18 +13,19 @@
     "test:watch": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./src --watch",
     "test:file": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js"
   },
-  "main": "dist/index.js",
+  "main": "dist/event-parser/src/index.js",
   "publishConfig": {
     "access": "public"
   },
   "dependencies": {
     "@types/lodash": "^4.14.191",
-    "@zkfs/node": "*",
     "@zkfs/storage-orbit-db": "*",
-    "@zkfs/virtual-storage": "*"
+    "snarkyjs": "0.9.4"
   },
   "devDependencies": {
-    "eslint": "^8.33.0",
-    "snarkyjs": "0.9.5"
+    "@jest/globals": "^29.5.0",
+    "@zkfs/node": "*",
+    "@zkfs/virtual-storage": "*",
+    "eslint": "^8.33.0"
   }
 }

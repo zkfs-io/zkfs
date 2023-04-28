@@ -2,10 +2,11 @@
 /* eslint-disable new-cap */
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
-import type { ZkfsNode } from '@zkfs/node';
 import type { OrbitDbStoragePartial } from '@zkfs/storage-orbit-db';
-import { Field, type Mina, PublicKey, isReady, UInt32 } from 'snarkyjs';
-import type { ValueRecord } from '@zkfs/node/dist/interface.js';
+import { Field, type Mina, PublicKey, UInt32 } from 'snarkyjs';
+
+// eslint-disable-next-line import/no-relative-packages
+import type { ZkfsNode, ValueRecord } from '../../node/src/interface.js';
 
 import sortEventsAscending from './sortEventsAscending.js';
 import type Events from './types.js';
@@ -48,11 +49,7 @@ class EventParser {
   }
 
   // eslint-disable-next-line max-statements
-  public async processEvents(
-    events: Events,
-    zkfsNode: ZkfsNode<OrbitDbStoragePartial>,
-    publicKey: PublicKey
-  ) {
+  public async processEvents(events: Events, publicKey: PublicKey) {
     for (const eventsPerBlock of events) {
       for (const event of eventsPerBlock.events) {
         const depth = Number(event[0]);
@@ -62,8 +59,12 @@ class EventParser {
         const valueStartsFromIndex = depth + 1;
         const value = event.slice(valueStartsFromIndex);
 
+        if (this.zkfsNode === undefined) {
+          throw new Error('Call first initialize() on eventParser.');
+        }
+
         // update the stored serialized merkle map
-        zkfsNode.storage.virtualStorage.setSerializedValue(
+        this.zkfsNode.storage.virtualStorage.setSerializedValue(
           publicKey.toBase58(),
           map,
           keyInMap,
@@ -71,22 +72,22 @@ class EventParser {
         );
 
         // save the serialized value to DB
-        const combinedKey = zkfsNode.storage.virtualStorage.getCombinedKey(
+        const combinedKey = this.zkfsNode.storage.virtualStorage.getCombinedKey(
           map,
           keyInMap
         );
         const valueRecord: ValueRecord = { [String(combinedKey)]: value };
         // eslint-disable-next-line no-await-in-loop
-        await zkfsNode.storage.setValue(publicKey.toBase58(), valueRecord);
+        await this.zkfsNode.storage.setValue(publicKey.toBase58(), valueRecord);
       }
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   public async initialize(zkfsNode: ZkfsNode<OrbitDbStoragePartial>) {
     // for local fetching
     this.zkfsNode = zkfsNode;
 
-    await isReady;
     const { addresses } = zkfsNode.storage.config;
 
     // eslint-disable-next-line max-len
@@ -102,19 +103,13 @@ class EventParser {
     trigger.register(async () => {
       await Promise.all(
         addresses.map(async (address) => {
-          await this.fetchEventsForAddress(
-            PublicKey.fromBase58(address),
-            zkfsNode
-          );
+          await this.fetchEventsForAddress(PublicKey.fromBase58(address));
         })
       );
     });
   }
 
-  public async fetchEventsForAddress(
-    publicKey: PublicKey,
-    zkfsNode: ZkfsNode<OrbitDbStoragePartial>
-  ) {
+  public async fetchEventsForAddress(publicKey: PublicKey) {
     // todo: add support for zkApps with tokenId
     const filterOptions = { from: this.getLastSeen(publicKey).add(1) };
     const events = await this.mina.fetchEvents(
@@ -124,16 +119,13 @@ class EventParser {
     );
 
     const sortedEvents = sortEventsAscending(events);
-    await this.processEvents(sortedEvents, zkfsNode, publicKey);
+    await this.processEvents(sortedEvents, publicKey);
 
     const lastSeen = this.getLastProcessedBlock(sortedEvents);
     this.setLastSeen(publicKey, lastSeen);
   }
 
-  public async fetchAndProcessLocalEventsForAddress(
-    publicKey: PublicKey,
-    zkfsNode: ZkfsNode<OrbitDbStoragePartial>
-  ) {
+  public async fetchAndProcessLocalEventsForAddress(publicKey: PublicKey) {
     const events = await this.mina.fetchEvents(publicKey, Field(1));
     const sortedEvents = sortEventsAscending(events);
 
@@ -145,7 +137,7 @@ class EventParser {
         ? lastProcessedBlock
         : lastProcessedBlock.add(1)
     );
-    await this.processEvents(filteredEvents, zkfsNode, publicKey);
+    await this.processEvents(filteredEvents, publicKey);
 
     const lastSeen = this.getLastProcessedBlock(filteredEvents);
     this.setLastSeen(publicKey, lastSeen);
@@ -167,9 +159,7 @@ class EventParser {
           // eslint-disable-next-line max-len
           // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
           await this.fetchAndProcessLocalEventsForAddress(
-            PublicKey.fromBase58(address),
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            this.zkfsNode!
+            PublicKey.fromBase58(address)
           )
       )
     );

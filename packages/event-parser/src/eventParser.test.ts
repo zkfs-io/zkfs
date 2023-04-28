@@ -5,6 +5,7 @@ import { VirtualStorage } from '@zkfs/virtual-storage';
 import type { IPFS } from 'ipfs-core';
 import { ZkfsNode } from '@zkfs/node';
 import { jest } from '@jest/globals';
+import type { ValueRecord } from '@zkfs/node/src/interface.js';
 
 import {
   counterTestData,
@@ -13,7 +14,6 @@ import {
 } from '../test/eventData.js';
 
 import EventParser from './eventParser.js';
-import { ValueRecord } from '@zkfs/node/src/interface.js';
 
 describe('eventParser', () => {
   beforeAll(async () => {
@@ -54,8 +54,6 @@ describe('eventParser', () => {
     const zkfsNode = new ZkfsNode<OrbitDbStoragePartial>({
       storage,
       services: [],
-
-      // @ts-expect-error - Add generic type to EventParser
       eventParser,
     });
 
@@ -102,8 +100,6 @@ describe('eventParser', () => {
     const zkfsNode = new ZkfsNode<OrbitDbStoragePartial>({
       storage,
       services: [],
-
-      // @ts-expect-error - Add generic type to EventParser
       eventParser,
     });
     await eventParser.initialize(zkfsNode);
@@ -140,8 +136,6 @@ describe('eventParser', () => {
     const zkfsNode = new ZkfsNode<OrbitDbStoragePartial>({
       storage,
       services: [],
-
-      // @ts-expect-error - Add generic type to EventParser
       eventParser,
     });
     await eventParser.initialize(zkfsNode);
