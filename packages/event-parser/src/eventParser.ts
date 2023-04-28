@@ -5,11 +5,11 @@
 import type { ZkfsNode } from '@zkfs/node';
 import type { OrbitDbStoragePartial } from '@zkfs/storage-orbit-db';
 import { Field, type Mina, PublicKey, isReady, UInt32 } from 'snarkyjs';
+import type { ValueRecord } from '@zkfs/node/dist/interface.js';
 
 import sortEventsAscending from './sortEventsAscending.js';
 import type Events from './types.js';
 import Trigger from './trigger.js';
-import { ValueRecord } from '@zkfs/node/dist/interface.js';
 
 const defaultOption = {
   isLocalTesting: false,
@@ -24,6 +24,28 @@ class EventParser {
     public mina: typeof Mina,
     public options = defaultOption
   ) { }
+
+  public getLastProcessedBlock(events: Events): UInt32 {
+    // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
+    return events.at(-1).blockHeight;
+  }
+
+  public setLastSeen(publicKey: PublicKey, lastSeen: UInt32) {
+    const addressLastSeen = this.addressLastSeen ?? {};
+    addressLastSeen[publicKey.toBase58()] = lastSeen;
+    this.addressLastSeen = addressLastSeen;
+  }
+
+  public getLastSeen(publicKey: PublicKey): UInt32 {
+    const addressLastSeen = this.addressLastSeen ?? {};
+    return addressLastSeen[publicKey.toBase58()] ?? UInt32.from(0);
+  }
+
+  public filterEventsFromBlockHeight(events: Events, blockHeight: UInt32) {
+    return events.filter((event) =>
+      event.blockHeight.greaterThanOrEqual(blockHeight).toBoolean()
+    );
+  }
 
   // eslint-disable-next-line max-statements
   public async processEvents(
@@ -60,29 +82,6 @@ class EventParser {
     }
   }
 
-  public getLastProcessedBlock(events: Events): UInt32 {
-    // eslint-disable-next-line putout/putout
-    // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
-    return events.at(-1).blockHeight;
-  }
-
-  public setLastSeen(publicKey: PublicKey, lastSeen: UInt32) {
-    const addressLastSeen = this.addressLastSeen ?? {};
-    addressLastSeen[publicKey.toBase58()] = lastSeen;
-    this.addressLastSeen = addressLastSeen;
-  }
-
-  public getLastSeen(publicKey: PublicKey): UInt32 {
-    const addressLastSeen = this.addressLastSeen ?? {};
-    return addressLastSeen[publicKey.toBase58()] ?? UInt32.from(0);
-  }
-
-  public filterEventsFromBlockHeight(events: Events, blockHeight: UInt32) {
-    return events.filter((event) =>
-      event.blockHeight.greaterThan(blockHeight).toBoolean()
-    );
-  }
-
   public async initialize(zkfsNode: ZkfsNode<OrbitDbStoragePartial>) {
     // for local fetching
     this.zkfsNode = zkfsNode;
@@ -116,9 +115,8 @@ class EventParser {
     publicKey: PublicKey,
     zkfsNode: ZkfsNode<OrbitDbStoragePartial>
   ) {
-    console.log('fetching')
     // todo: add support for zkApps with tokenId
-    const filterOptions = { from: this.getLastSeen(publicKey) };
+    const filterOptions = { from: this.getLastSeen(publicKey).add(1) };
     const events = await this.mina.fetchEvents(
       publicKey,
       Field(1),
@@ -138,9 +136,14 @@ class EventParser {
   ) {
     const events = await this.mina.fetchEvents(publicKey, Field(1));
     const sortedEvents = sortEventsAscending(events);
+
+    // this workaround exists, because local Mina returns all events
+    const lastProcessedBlock = this.getLastSeen(publicKey);
     const filteredEvents = this.filterEventsFromBlockHeight(
       sortedEvents,
-      this.getLastSeen(publicKey)
+      lastProcessedBlock.equals(UInt32.from(0)).toBoolean()
+        ? lastProcessedBlock
+        : lastProcessedBlock.add(1)
     );
     await this.processEvents(filteredEvents, zkfsNode, publicKey);
 
@@ -154,7 +157,7 @@ class EventParser {
    */
   public async fetchLocalEvents() {
     if (this.zkfsNode === undefined) {
-      throw new Error('Please call initialize first');
+      throw new Error('Call first initialize() on eventParser.');
     }
 
     const { addresses } = this.zkfsNode.storage.config;
