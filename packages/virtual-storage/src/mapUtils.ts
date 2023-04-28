@@ -1,11 +1,6 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable new-cap */
-import {
-  Field,
-  MerkleMap,
-  Bool,
-  MerkleMapWitness,
-} from 'snarkyjs';
+import { Field, MerkleMap, Bool, MerkleMapWitness } from 'snarkyjs';
 
 interface SerializableTree {
   nodes: Record<number, Record<string, Field>>;

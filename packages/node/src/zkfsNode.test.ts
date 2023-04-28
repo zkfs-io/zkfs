@@ -51,8 +51,6 @@ async function setupPartialNode() {
   const zkfsNodePartialConfig: ZkfsWriterNodeConfig<OrbitDbStoragePartial> = {
     storage,
     services: [orbitDbDataPubSub],
-
-    // @ts-expect-error todo: fix generics on services
     eventParser,
   };
 

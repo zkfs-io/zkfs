@@ -57,5 +57,5 @@ describe('mapUtils', () => {
       expect(originalRoot.toString()).toBe(root.toString());
       expect(originalRootFromWitness.toString()).toBe(root.toString());
     });
-  })
+  });
 });
