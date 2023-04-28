@@ -1,4 +1,4 @@
-import { Circuit, UInt64, method } from 'snarkyjs';
+import { UInt64, method } from 'snarkyjs';
 import {
   offchainState,
   OffchainStateContract,

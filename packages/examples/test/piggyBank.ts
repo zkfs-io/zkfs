@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
-import { Circuit, method, Poseidon, PublicKey, UInt64 } from 'snarkyjs';
+import { method, PublicKey, UInt64 } from 'snarkyjs';
 import {
   offchainState,
   OffchainStateContract,
@@ -16,7 +16,6 @@ class PiggyBank extends OffchainStateContract {
   public init() {
     super.init();
     this.deposits.setRootHash(OffchainStateMap.initialRootHash());
-    Circuit.log('userDeposits', this.userDeposits.getPath().toString());
   }
 
   /**
@@ -29,10 +28,6 @@ class PiggyBank extends OffchainStateContract {
    * @returns A Key<PublicKey>
    */
   public getDepositKey(address: PublicKey): Key<PublicKey> {
-    Circuit.log(
-      'user key is',
-      Key.fromType<PublicKey>(PublicKey, address).toString()
-    );
     return Key.fromType<PublicKey>(PublicKey, address);
   }
 

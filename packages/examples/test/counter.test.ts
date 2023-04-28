@@ -19,7 +19,6 @@ describeContract<Counter>('counter', Counter, (context) => {
       zkAppPrivateKey,
       zkApp,
       contractApi,
-      mockEventParser,
     } = context();
 
     const tx = await withTimer(
@@ -45,11 +44,10 @@ describeContract<Counter>('counter', Counter, (context) => {
     return tx;
   }
 
-  it.skip('correctly updates the count state on the `Counter` smart contract', async () => {
+  it('correctly updates the count state on the `Counter` smart contract', async () => {
     expect.assertions(2);
 
-    const { senderAccount, senderKey, zkApp, contractApi, mockEventParser } =
-      context();
+    const { senderAccount, senderKey, zkApp, contractApi } = context();
 
     const tx0 = await localDeploy();
 
@@ -77,7 +75,6 @@ describeContract<Counter>('counter', Counter, (context) => {
       async () => await contractApi.prove(zkApp, async () => await tx1.prove())
     );
     await tx1.sign([senderKey]).send();
-    await mockEventParser();
 
     contractApi.restoreLatest(zkApp);
 
@@ -113,7 +110,6 @@ describeContract<Counter>('counter', Counter, (context) => {
       async () => await contractApi.prove(zkApp, async () => await tx2.prove())
     );
     await tx2.sign([senderKey]).send();
-    await mockEventParser();
 
     contractApi.restoreLatest(zkApp);
 
@@ -128,5 +124,5 @@ describeContract<Counter>('counter', Counter, (context) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx2.toPretty(),
     });
-  }, 40_000);
+  });
 });

@@ -16,7 +16,7 @@ class ContractApi {
   public virtualStorage = new VirtualStorage();
 
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
-  public constructor(public node: ZkfsNode<OrbitDbStoragePartial>) { }
+  public constructor(public node?: ZkfsNode<OrbitDbStoragePartial>) { }
 
   /**
    * This function restores the latest offchain state of a contract.

@@ -4,7 +4,6 @@
 /* eslint-disable jest/require-top-level-describe */
 
 import { AccountUpdate, type PublicKey, UInt64 } from 'snarkyjs';
-import { Key } from '@zkfs/contract-api';
 
 import PiggyBank from './piggyBank.js';
 import describeContract, { withTimer } from './describeContract.js';
@@ -43,7 +42,7 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
     return tx;
   }
 
-  it.only('correctly deposits an amount for a user to the `PiggyBank` smart contract', async () => {
+  it('correctly deposits an amount for a user to the `PiggyBank` smart contract', async () => {
     expect.assertions(2);
 
     Error.stackTraceLimit = 1000;
@@ -130,5 +129,5 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx2.toPretty(),
     });
-  }, 40_000);
+  });
 });
