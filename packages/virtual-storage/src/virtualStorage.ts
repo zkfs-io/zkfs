@@ -15,7 +15,6 @@ type ValueRecord = Record<string, string[] | undefined>;
  * updates during contract execution or event processing.
  */
 class VirtualStorage {
-  
   /**
    * This function computes a root from a serialized witness and
    * serialized value
@@ -171,7 +170,7 @@ class VirtualStorage {
     address: string,
     mapName: string,
     key: string
-  ): MerkleMapWitness | undefined {
+  ): MerkleMapWitness {
     const map = this.getMap(address, mapName);
 
     let witness = this.witnesses[this.getCombinedKey(mapName, key)];

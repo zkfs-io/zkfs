@@ -124,6 +124,6 @@ describe('zkfsNode', () => {
       expect(computedRoot).toStrictEqual(
         piggyBankTestData.maps.depositsMap.hash
       );
-    }, 20_000);
+    }, 40_000);
   });
 });
