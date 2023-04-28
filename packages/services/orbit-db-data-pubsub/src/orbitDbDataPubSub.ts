@@ -1,17 +1,22 @@
 /* eslint-disable func-style */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable unicorn/prevent-abbreviations */
-import { TextEncoder, TextDecoder } from 'node:util';
+import { TextDecoder } from 'node:util';
 
 import type { Message } from '@libp2p/interface-pubsub';
 
 // eslint-disable-next-line import/no-relative-packages
 import type OrbitDbStoragePartial from '../../../storage-adapters/orbit-db/src/orbitDbStoragePartial.js';
-// eslint-disable-next-line import/no-relative-packages
-import type { Service, StorageAdapter, ZkfsNode } from '../../../node/src/interface.js';
+import type {
+  Service,
+  StorageAdapter,
+  ZkfsNode,
+  // eslint-disable-next-line import/no-relative-packages
+} from '../../../node/src/interface.js';
+
 import handleGetMapRequest from './handlers/getMapRequest.js';
-import handleGetValuesRequest from './handlers/getValuesRequest.js'
-import handleGetWitnessRequest from './handlers/getWitnessRequest.js'
+import handleGetValuesRequest from './handlers/getValuesRequest.js';
+import handleGetWitnessRequest from './handlers/getWitnessRequest.js';
 import {
   validatorFactory,
   requestSchema,
@@ -37,6 +42,7 @@ class OrbitDbDataPubSub implements Service<StorageAdapter> {
       const decodedString = new TextDecoder().decode(msg.data);
       try {
         const request = getMapRequestValidation.verify(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           JSON.parse(decodedString)
         );
         if (request.type === 'getMap') {
@@ -58,7 +64,10 @@ class OrbitDbDataPubSub implements Service<StorageAdapter> {
       }
     };
     console.log('initializing data provider');
-    const pubsub = zkfsNode.storage.config.ipfs.pubsub;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const { pubsub } = zkfsNode.storage.config.ipfs;
+    // eslint-disable-next-line max-len
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
     await pubsub.subscribe(requestTopic, handleRequest);
   }
 
