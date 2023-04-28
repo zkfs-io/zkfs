@@ -1,0 +1,145 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+:root[data-theme='dark'] {
+
+  /* ZKFS CSS */
+
+  --ifm-background-color: rgb(21, 24, 30);
+  --ifm-navbar-background-color: #212227;
+  --ifm-font-family-base: 'Roboto', sans-serif;
+  --ifm-font-color-base: rgb(241, 241, 241);
+  --ifm-color-primary: rgba(81, 232, 131, 1);
+  /* --ifm-color-primary-darker: rgba(59, 151, 90, 0.9); */
+  /* --ifm-color-secondary: rgba(250, 104, 189, 0.9); */
+  /* --ifm-color-primary: rgba(250, 104, 189, 0.9); */
+
+  /* --ifm-navbar-link-color: #CACACA; */
+  --ifm-dropdown-background-color: var(--ifm-navbar-background-color);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+}
+
+.dropdown__menu>li:last-of-type {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.navbar-sidebar__items>.navbar-sidebar__item>ul>li>ul>li:last-of-type {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.navbar-sidebar__items--show-secondary>.navbar-sidebar__item>ul>li>ul>li:last-of-type {
+  pointer-events: all;
+  opacity: 1;
+}
+
+a[href="/docs/canary/intro"] {
+  pointer-events: none;
+  opacity: 0.8
+}
+
+.dropdown--hoverable>a[href="/docs/canary/intro"] {
+  pointer-events: none;
+  opacity: 1
+}
+
+.alert {
+  --ifm-alert-background-color: transparent;
+  --ifm-alert-border-color: var(--ifm-color-primary);
+  /* border: 2px dashed var(--ifm-color-primary); */
+  background: var(--ifm-navbar-background-color);
+}
+
+.footer--dark {
+  padding-top: 56px;
+  padding-bottom: 48px;
+  --ifm-footer-background-color: #2E3137;
+  --ifm-footer-background-color: var(--ifm-navbar-background-color);
+  box-shadow: 0px 0px 12px 0px rgba(13, 15, 19, 0.2);
+  margin-top: 48px;
+}
+
+.footer--dark .row {
+  justify-content: space-around;
+}
+
+.footer--dark .col {
+  flex: 0;
+  min-width: 240px;
+}
+
+.footer__copyright {
+  padding-top: 24px;
+}
+
+p {
+  letter-spacing: 0.4px;
+}
+
+.navbar .navbar__inner {
+  margin: 0 auto;
+  max-width: var(--ifm-container-width-xl);
+  padding: 0 var(--ifm-spacing-horizontal);
+}
+
+.navbar__brand {
+  margin-right: 0px;
+  width: 105px;
+}
+
+.navbar__logo {
+  height: 40px;
+  position: absolute;
+  top: 10px;
+}
+
+.navbar__link {
+  font-weight: 600;
+}
+
+.docPage_node_modules-\@docusaurus-theme-classic-lib-theme-DocPage-Layout-styles-module {
+  padding-top: 32px;
+}
+
+.docMainContainer_node_modules-\@docusaurus-theme-classic-lib-theme-DocPage-Layout-Main-styles-module {
+  padding-bottom: 48px;
+  /* padding-top: 24px; */
+}
+
+.docSidebarContainer_node_modules-\@docusaurus-theme-classic-lib-theme-DocPage-Layout-Sidebar-styles-module {
+  border-right: none !important;
+  margin-right: 24px;
+}
+
+.announcementBar_node_modules-\@docusaurus-theme-classic-lib-theme-AnnouncementBar-styles-module {
+  font-weight: 600;
+  color: rgba(0, 0, 0, .8) !important;
+  font-size: 16px;
+  height: 36px !important;
+  padding: 12px 12px;
+}
+
+@media (max-width: 768px) {
+  .announcementBar_node_modules-\@docusaurus-theme-classic-lib-theme-AnnouncementBar-styles-module {
+    height: 64px !important;
+  }
+}
+
+@media (min-width: 1416px) {
+  .main-wrapper {
+    align-self: center;
+    max-width: var(--ifm-container-width-xl);
+    width: var(--ifm-container-width-xl);
+  }
+}

@@ -18,6 +18,9 @@ const errors = {
 
   unsupportedTypeForKey: () =>
     new Error(`Can't create Key from unsupported value type.`),
+
+  lastUpdatedOffchainStateNotFound: () =>
+    new Error('Last updated offchain state was not found'),
 };
 
 export default errors;

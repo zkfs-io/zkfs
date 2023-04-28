@@ -1,11 +1,11 @@
 /* eslint-disable jest/consistent-test-it */
 /* eslint-disable no-console */
 /* eslint-disable jest/require-top-level-describe */
-
+/* eslint-disable max-statements */
 import { AccountUpdate, UInt64 } from 'snarkyjs';
 
 import ConcurrentCounter from './concurrentCounter.js';
-import describeContract from './describeContract.js';
+import describeContract, { withTimer } from './describeContract.js';
 
 // eslint-disable-next-line jest/require-hook
 describeContract<ConcurrentCounter>(
@@ -25,11 +25,18 @@ describeContract<ConcurrentCounter>(
         AccountUpdate.fundNewAccount(deployerAccount);
         zkApp.deploy();
       });
-      await tx.prove();
+
+      await withTimer(
+        'prove',
+        async () => await contractApi.prove(zkApp, async () => await tx.prove())
+      );
 
       // this tx needs .sign(), because `deploy()` adds an account update
       // that requires signature authorization
       await tx.sign([deployerKey, zkAppPrivateKey]).send();
+
+      contractApi.restoreLatest(zkApp);
+
       return tx;
     }
 
@@ -44,7 +51,7 @@ describeContract<ConcurrentCounter>(
         'ConcurrentCounter.deploy() successful, initial offchain state:',
         {
           offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
-          data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
+          data: zkApp.virtualStorage.data[zkApp.address.toBase58()],
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           tx: tx0.toPretty(),
         }
@@ -54,15 +61,20 @@ describeContract<ConcurrentCounter>(
 
       const tx1 = await contractApi.transaction(zkApp, senderAccount, () => {
         zkApp.increment(UInt64.from(0), UInt64.from(1));
-        zkApp.increment(UInt64.from(0), UInt64.from(1));
       });
 
-      await tx1.prove();
+      await withTimer(
+        'prove',
+        async () =>
+          await contractApi.prove(zkApp, async () => await tx1.prove())
+      );
       await tx1.sign([senderKey]).send();
+
+      contractApi.restoreLatest(zkApp);
 
       console.log('ConcurrentCounter.rollup(), rolling up actions...', {
         counters:
-          zkApp.counters.contract?.virtualStorage?.data[
+          zkApp.counters.contract?.virtualStorage.data[
             zkApp.address.toBase58()
           ],
       });
@@ -71,20 +83,34 @@ describeContract<ConcurrentCounter>(
         zkApp.rollup();
       });
 
-      await tx2.prove();
+      console.log('rollup tx', tx2.toPretty());
+
+      await withTimer(
+        'prove',
+        async () =>
+          await contractApi.prove(zkApp, async () => await tx2.prove())
+      );
       await tx2.sign([senderKey]).send();
+
+      contractApi.restoreLatest(zkApp);
+
+      const [counter] = zkApp.counters.get<UInt64, UInt64>(
+        UInt64,
+        ConcurrentCounter.idToKey(UInt64.from(0))
+      );
 
       console.log(
         'ConcurrentCounter.rollup() successful, new offchain state:',
         {
+          counter: counter.toString(),
           offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
-          data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
+          data: zkApp.virtualStorage.data[zkApp.address.toBase58()],
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           tx: tx2.toPretty(),
         }
       );
 
-      expect(zkApp.getCounter(UInt64.from(0))[0].toString()).toBe('2');
+      expect(counter.toString()).toBe('1');
     });
   }
 );

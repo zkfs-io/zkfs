@@ -10,6 +10,7 @@ import {
   Circuit,
   type FlexibleProvablePure,
 } from 'snarkyjs';
+import { mergeMerkleMapWitnesses } from '@zkfs/virtual-storage';
 
 // this needs to be removed once https://github.com/o1-labs/snarkyjs/issues/777 is fixed
 // eslint-disable-next-line import/no-relative-packages
@@ -130,10 +131,6 @@ class OffchainState<KeyType, ValueType> {
       throw errors.contractNotFound();
     }
 
-    if (!this.contract.virtualStorage) {
-      throw errors.virtualStorageNotFound();
-    }
-
     if (!this.parent?.mapName) {
       throw errors.parentMapNotFound();
     }
@@ -165,28 +162,31 @@ class OffchainState<KeyType, ValueType> {
       throw errors.valueTypeNotFound();
     }
 
-    this.value = Circuit.witness<ValueType>(this.valueType, () => {
-      const valueFields = this.getValueFieldsFromVirtualStorage();
-
-      if (!valueFields) {
-        // eslint-disable-next-line max-len
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        if (!defaultValue) {
-          throw errors.valueFieldsNotFound();
-        }
-
-        return defaultValue;
-      }
-
-      if (!this.valueType) {
-        throw errors.valueTypeNotFound();
-      }
-
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      return this.valueType.fromFields(valueFields) as ValueType;
-    });
+    this.value = Circuit.witness<ValueType>(this.valueType, () =>
+      this.provideValue(defaultValue)
+    );
 
     return this.value;
+  }
+
+  public provideValue(defaultValue?: ValueType): ValueType {
+    if (!this.valueType) {
+      throw errors.valueTypeNotFound();
+    }
+
+    const valueFields = this.getValueFieldsFromVirtualStorage();
+
+    if (!valueFields) {
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      if (!defaultValue) {
+        throw errors.valueFieldsNotFound();
+      }
+
+      return defaultValue;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    return this.valueType.fromFields(valueFields) as ValueType;
   }
 
   /**
@@ -200,10 +200,6 @@ class OffchainState<KeyType, ValueType> {
         throw errors.contractNotFound();
       }
 
-      if (!this.contract.virtualStorage) {
-        throw errors.virtualStorageNotFound();
-      }
-
       if (!this.parent?.mapName) {
         throw errors.parentMapNotFound();
       }
@@ -212,11 +208,24 @@ class OffchainState<KeyType, ValueType> {
         throw errors.keyNotFound();
       }
 
-      return this.contract.virtualStorage.getWitness(
+      // keeping this here for final review
+      // keep re-using the same witness, if it exists
+      // if (this.witness) {
+      //   Circuit.log('Reusing old witness for key: ', this.key.toField());
+      //   return this.witness;
+      // }
+
+      const witness = this.contract.virtualStorage.getWitness(
         this.contract.address.toBase58(),
         this.parent.mapName.toString(),
         this.key.toString()
       );
+
+      if (!witness) {
+        throw errors.witnessNotFound();
+      }
+
+      return witness;
     });
 
     return this.witness;
@@ -326,12 +335,53 @@ class OffchainState<KeyType, ValueType> {
       throw errors.witnessNotFound();
     }
 
+    // attempt to merge the current witness with the latest available witness
+    this.witness = Circuit.witness<MerkleMapWitness>(MerkleMapWitness, () => {
+      if (!this.witness) {
+        throw errors.witnessNotFound();
+      }
+
+      if (!this.parent?.mapName) {
+        throw errors.parentMapNotFound();
+      }
+
+      if (!this.contract) {
+        throw errors.contractNotFound();
+      }
+
+      const lastUpdatedOffchainState =
+        this.contract.getLastUpdatedOffchainState(
+          this.parent.mapName.toField().toString()
+        );
+
+      // if there is no state/witness to merge with, return the existing witness
+      if (
+        !lastUpdatedOffchainState?.witness ||
+        // eslint-disable-next-line max-len
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        !lastUpdatedOffchainState.value
+      ) {
+        return this.witness;
+      }
+
+      if (lastUpdatedOffchainState.key?.toString() === this.key?.toString()) {
+        return lastUpdatedOffchainState.witness;
+      }
+
+      return mergeMerkleMapWitnesses(
+        this.witness,
+        lastUpdatedOffchainState.treeValue,
+        lastUpdatedOffchainState.witness
+      );
+    });
+
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     return this.witness.computeRootAndKey(this.treeValue) as [Field, Field];
   }
 
   public assertIsInParentTree() {
     const isInParentTree = this.isInParentTree();
+
     isInParentTree.assertTrue();
   }
 
@@ -356,6 +406,7 @@ class OffchainState<KeyType, ValueType> {
     }
 
     // take the root hash of own parent
+    this.parent.contract = this.contract;
     const parentRootHash = this.parent.getRootHash();
 
     if (!parentRootHash) {
@@ -462,6 +513,7 @@ class OffchainState<KeyType, ValueType> {
    * @param {ValueType} value - The value to be set.
    * @returns The value that was set.
    */
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   public set(
     value: ValueType,
     { shouldEmitEvent }: SetOptions = OffchainState.defaultSetOptions
@@ -484,21 +536,46 @@ class OffchainState<KeyType, ValueType> {
 
     this.value = value;
 
-    const valueFields = this.valueType.toFields(this.value);
-    this.contract.virtualStorage.setValue(
-      this.contract.address.toBase58(),
-      this.parent.mapName.toString(),
-      this.key.toString(),
-      valueFields
-    );
-
     this.getWitness();
+
+    const valueFields = this.valueType.toFields(this.value);
+    Circuit.asProver(() => {
+      if (!this.parent?.mapName) {
+        throw errors.parentMapNotFound();
+      }
+
+      if (!this.key) {
+        throw errors.keyNotFound();
+      }
+
+      if (!this.contract?.virtualStorage) {
+        throw errors.virtualStorageNotFound();
+      }
+
+      if (!this.valueType) {
+        throw errors.valueTypeNotFound();
+      }
+
+      this.contract.virtualStorage.setValue(
+        this.contract.address.toBase58(),
+        this.parent.mapName.toString(),
+        this.key.toString(),
+        valueFields
+      );
+    });
 
     const [computedParentRootHash, computedParentKey] =
       this.getComputedParentRootHashAndKey();
 
     this.key.toField().assertEquals(computedParentKey);
     this.parent.setRootHash(computedParentRootHash);
+
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const lastUpdatedOffchainState = this as OffchainState<unknown, unknown>;
+    this.contract.setLastUpdatedOffchainState(
+      this.parent.mapName.toString(),
+      lastUpdatedOffchainState
+    );
 
     if (this.contract.rollingStateOptions.shouldEmitEvents && shouldEmitEvent) {
       this.emitSetEvent();

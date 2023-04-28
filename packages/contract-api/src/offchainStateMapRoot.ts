@@ -1,5 +1,6 @@
 /* eslint-disable new-cap */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
+import uniqueId from 'lodash/uniqueId.js';
 import { Bool, type Field, MerkleMap } from 'snarkyjs';
 
 import errors from './errors.js';
@@ -38,6 +39,8 @@ class OffchainStateMapRoot {
   public parent?: OffchainStateMap;
 
   public rootHash?: OffchainState<unknown, Field>;
+
+  public debugId = uniqueId();
 
   /**
    * Name of the root map, hardcoded within this class as

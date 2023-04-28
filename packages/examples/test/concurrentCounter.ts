@@ -6,7 +6,9 @@ import {
   offchainState,
   OffchainStateContract,
   OffchainStateMapRoot,
+  withOffchainState,
 } from '@zkfs/contract-api';
+import { safeUint64Sub } from '@zkfs/safe-math';
 import {
   Circuit,
   Field,
@@ -64,6 +66,7 @@ class ConcurrentCounter extends OffchainStateContract {
 
   @offchainState() public counters = OffchainState.fromMap();
 
+  @withOffchainState
   public init() {
     super.init();
     this.actionsHash.set(Reducer.initialActionsHash);
@@ -111,21 +114,10 @@ class ConcurrentCounter extends OffchainStateContract {
 
     const [counter] = this.getCounter(id);
 
-    /**
-     * If the counter needs to be decrement, make sure
-     * UInt64 won't underflow by incrementing it to the
-     * value it needs to be decremented by later.
-     */
-    const decrementFrom = Circuit.if(
-      counter.lessThan(by),
-      counter.add(by),
-      counter
-    );
-
     const newCounter = Circuit.if(
       action.type.equals(Action.types.increment),
       counter.add(by),
-      decrementFrom.sub(by)
+      safeUint64Sub(counter, by)
     );
 
     this.setCounter(id, newCounter);
@@ -137,6 +129,7 @@ class ConcurrentCounter extends OffchainStateContract {
   }
 
   @method
+  @withOffchainState
   public rollup() {
     const actionsHash = this.actionsHash.get();
     this.actionsHash.assertEquals(actionsHash);
@@ -147,15 +140,7 @@ class ConcurrentCounter extends OffchainStateContract {
 
     const currentRootHash = this.root.getRootHash();
 
-    /**
-     * Fail silently, until the following issue is resolved:
-     * https://discord.com/channels/484437221055922177/1081186784622424154
-     */
-    if (!this.virtualStorage?.data) {
-      // eslint-disable-next-line no-console
-      console.log('Skipping execution, because no virtual storage was found');
-      return;
-    }
+    this.resetLastUpdatedOffchainState();
 
     const { actionsHash: newActionsHash, state: newRootHash } =
       this.withRollingState(() =>
@@ -167,7 +152,7 @@ class ConcurrentCounter extends OffchainStateContract {
             state: currentRootHash,
             actionsHash,
           },
-          { maxTransactionsWithActions: 2 }
+          { maxTransactionsWithActions: 1 }
         )
       );
 

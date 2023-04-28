@@ -7,7 +7,7 @@ import { AccountUpdate, type PublicKey, UInt64 } from 'snarkyjs';
 import { Key } from '@zkfs/contract-api';
 
 import PiggyBank from './piggyBank.js';
-import describeContract from './describeContract.js';
+import describeContract, { withTimer } from './describeContract.js';
 
 // eslint-disable-next-line jest/require-hook
 describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
@@ -20,15 +20,25 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
       contractApi,
     } = context();
 
-    const tx = await contractApi.transaction(zkApp, deployerAccount, () => {
-      AccountUpdate.fundNewAccount(deployerAccount);
-      zkApp.deploy();
-    });
-    await tx.prove();
+    const tx = await withTimer(
+      'transaction',
+      async () =>
+        await contractApi.transaction(zkApp, deployerAccount, () => {
+          AccountUpdate.fundNewAccount(deployerAccount);
+          zkApp.deploy();
+        })
+    );
+
+    await withTimer(
+      'prove',
+      async () => await contractApi.prove(zkApp, async () => await tx.prove())
+    );
 
     // this tx needs .sign(), because `deploy()` adds an account update
     // that requires signature authorization
     await tx.sign([deployerKey, zkAppPrivateKey]).send();
+
+    contractApi.restoreLatest(zkApp);
 
     return tx;
   }
@@ -43,12 +53,8 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
     const tx0 = await localDeploy();
 
     console.log('PiggyBank.deploy() successful, initial offchain state:', {
-      depositsRootHash: zkApp.deposits.getRootHash()?.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
-      data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
-      maps: Object.keys(
-        zkApp.virtualStorage?.maps[zkApp.address.toBase58()] ?? {}
-      ),
+      data: zkApp.virtualStorage.data[zkApp.address.toBase58()],
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx0.toPretty(),
     });
@@ -56,75 +62,61 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
     console.log('PiggyBank.initialDeposit(), updating the offchain state...');
 
     // update transaction
-    const tx1 = await contractApi.transaction(
-      zkApp,
-      senderAccount,
-      () => {
-        zkApp.initialDeposit(senderAccount, UInt64.from(10));
-      },
-      { maps: [zkApp.deposits] }
+    const tx1 = await withTimer(
+      'transaction',
+      async () =>
+        await contractApi.transaction(zkApp, senderAccount, () => {
+          zkApp.initialDeposit(senderAccount, UInt64.from(10));
+        })
     );
 
-    await tx1.prove();
+    await withTimer(
+      'prove',
+      async () => await contractApi.prove(zkApp, async () => await tx1.prove())
+    );
     await tx1.sign([senderKey]).send();
 
-    const key = zkApp.getDepositKey(senderAccount);
+    contractApi.restoreLatest(zkApp);
+
     const [currentDepositAmount] = zkApp.deposits.get<PublicKey, UInt64>(
       UInt64,
-      key
+      zkApp.getDepositKey(senderAccount)
     );
+
+    console.log('PiggyBank.initialDeposit() successful, new offchain state:', {
+      currentDepositAmount: currentDepositAmount.toString(),
+      offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
+      data: zkApp.virtualStorage.data[zkApp.address.toBase58()],
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      tx: tx1.toPretty(),
+    });
 
     expect(currentDepositAmount.toString()).toStrictEqual(
       UInt64.from(10).toString()
     );
 
-    try {
-      const depositsMapName = zkApp.deposits.mapName ?? Key.fromString('');
-      console.log(
-        'depositsMapName',
-        depositsMapName.toString(),
-        'path from deposits',
-        zkApp.deposits.getPath().toString(),
-        'using get Map from offchainstate',
-        'map name is',
-        zkApp.deposits.getMap(depositsMapName).mapName?.toString(),
-        'path',
-        zkApp.deposits.getMap(depositsMapName).getPath().toString()
-      );
-    } catch (error) {
-      console.log(error);
-    }
-
-    console.log('PiggyBank.initialDeposit() successful, new offchain state:', {
-      currentDepositAmount: currentDepositAmount.toString(),
-      depositsRootHash: zkApp.deposits.getRootHash()?.toString(),
-      offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
-      data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
-      maps: Object.keys(
-        zkApp.virtualStorage?.maps[zkApp.address.toBase58()] ?? {}
-      ),
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      tx: tx1.toPretty(),
-    });
-
     console.log('PiggyBank.deposit(), updating the offchain state...');
 
     // update transaction
-    const tx2 = await contractApi.transaction(
-      zkApp,
-      senderAccount,
-      () => {
-        zkApp.deposit(senderAccount, UInt64.from(10));
-      },
-      { maps: [zkApp.deposits] }
+    const tx2 = await withTimer(
+      'transaction',
+      async () =>
+        await contractApi.transaction(zkApp, senderAccount, () => {
+          zkApp.deposit(senderAccount, UInt64.from(10));
+        })
     );
 
-    await tx2.prove();
+    await withTimer(
+      'prove',
+      async () => await contractApi.prove(zkApp, async () => await tx2.prove())
+    );
     await tx2.sign([senderKey]).send();
+
+    contractApi.restoreLatest(zkApp);
 
     const [currentUpdatedDepositAmount] = zkApp.deposits.get<PublicKey, UInt64>(
       UInt64,
-      key
+      zkApp.getDepositKey(senderAccount)
     );
 
     expect(currentUpdatedDepositAmount.toString()).toStrictEqual(
@@ -133,12 +125,8 @@ describeContract<PiggyBank>('piggyBank', PiggyBank, (context) => {
 
     console.log('PiggyBank.deposit() successful, new offchain state:', {
       currentUpdatedDepositAmount: currentUpdatedDepositAmount.toString(),
-      depositsRootHash: zkApp.deposits.getRootHash()?.toString(),
       offchainStateRootHash: zkApp.offchainStateRootHash.get().toString(),
-      data: zkApp.virtualStorage?.data[zkApp.address.toBase58()],
-      maps: Object.keys(
-        zkApp.virtualStorage?.maps[zkApp.address.toBase58()] ?? {}
-      ),
+      data: zkApp.virtualStorage.data[zkApp.address.toBase58()],
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       tx: tx2.toPretty(),
     });

@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable new-cap */
-
-import type { VirtualStorage } from '@zkfs/virtual-storage';
 import { Field, SmartContract, State, state } from 'snarkyjs';
 
 import OffchainStateMapRoot from './offchainStateMapRoot.js';
+import OffchainStateBackup from './offchainStateBackup.js';
+import type OffchainState from './offchainState.js';
 
 interface RollingStateOptions {
   shouldEmitEvents: boolean;
@@ -17,12 +17,14 @@ interface RollingStateOptions {
  * which is the root hash of the offchain storage state
  */
 class OffchainStateContract extends SmartContract {
+  public static offchainState = {
+    backup: OffchainStateBackup,
+  };
+
   /**
    * Merkle root hash of the offchain storage state
    */
   @state(Field) public offchainStateRootHash = State<Field>();
-
-  public virtualStorage?: VirtualStorage;
 
   /* Way to access the offchain root state. */
   public root: OffchainStateMapRoot = new OffchainStateMapRoot(this);
@@ -32,6 +34,40 @@ class OffchainStateContract extends SmartContract {
     shouldEmitPrecondition: true,
     shouldEmitEvents: true,
   };
+
+  public get virtualStorage() {
+    return OffchainStateContract.offchainState.backup.virtualStorage;
+  }
+
+  public set virtualStorage(value) {
+    OffchainStateContract.offchainState.backup.virtualStorage = value;
+  }
+
+  public get lastUpdatedOffchainState() {
+    return OffchainStateContract.offchainState.backup.lastUpdatedOffchainState;
+  }
+
+  public set lastUpdatedOffchainState(value) {
+    OffchainStateContract.offchainState.backup.lastUpdatedOffchainState = value;
+  }
+
+  public resetLastUpdatedOffchainState() {
+    this.lastUpdatedOffchainState = undefined;
+  }
+
+  public getLastUpdatedOffchainState(
+    mapName: string
+  ): OffchainState<unknown, unknown> | undefined {
+    return this.lastUpdatedOffchainState?.[mapName];
+  }
+
+  public setLastUpdatedOffchainState(
+    mapName: string,
+    lastUpdatedOffchainState: OffchainState<unknown, unknown>
+  ) {
+    this.lastUpdatedOffchainState ??= {};
+    this.lastUpdatedOffchainState[mapName] = lastUpdatedOffchainState;
+  }
 
   public setRollingStateOptions(options: Partial<RollingStateOptions>) {
     this.rollingStateOptions = {
@@ -45,7 +81,6 @@ class OffchainStateContract extends SmartContract {
       ...this.rollingStateOptions,
       shouldEmitPrecondition: false,
       shouldEmitAccountUpdates: false,
-      shouldEmitEvents: true,
     };
   }
 
@@ -54,7 +89,6 @@ class OffchainStateContract extends SmartContract {
       ...this.rollingStateOptions,
       shouldEmitPrecondition: true,
       shouldEmitAccountUpdates: true,
-      shouldEmitEvents: true,
     };
   }
 
@@ -62,32 +96,11 @@ class OffchainStateContract extends SmartContract {
     callback: () => CallbackReturn
   ): CallbackReturn {
     this.enableRollingMode();
-    const result = callback.bind(this)();
+    const result = callback();
     this.disableRollingMode();
     this.root.setOnChainRootHash();
 
     return result;
-  }
-
-  /**
-   * It returns an array of strings, which are the names of
-   * the offchain state keys
-   *
-   * @returns An array of strings.
-   */
-  public analyzeOffchainStorage(): string[] {
-    // eslint-disable-next-line max-len
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-unsafe-member-access
-    const thisConstructor = Object.getPrototypeOf(this)
-      .constructor as OffchainStateContract;
-
-    const offchainStateKeys: string[] =
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      (Reflect.getMetadata('zkfs:offchainStateKeys', thisConstructor) as
-        | string[]
-        | undefined) ?? [];
-
-    return offchainStateKeys;
   }
 }
 
