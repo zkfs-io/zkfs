@@ -8,6 +8,7 @@ import {
 
 class Counter2 extends OffchainStateContract {
   @offchainState() public count1 = OffchainState.fromRoot<UInt64>(UInt64);
+
   @offchainState() public count2 = OffchainState.fromRoot<UInt64>(UInt64);
 
   @withOffchainState

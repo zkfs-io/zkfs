@@ -1,12 +1,11 @@
-/* eslint-disable lines-around-comment */
+/* eslint-disable @typescript-eslint/no-extraneous-class */
+/* eslint-disable @shopify/no-fully-static-classes */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable no-param-reassign */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
-// eslint-disable-next-line max-len
-/* eslint-disable @typescript-eslint/no-extraneous-class, @shopify/no-fully-static-classes */
 import { VirtualStorage } from '@zkfs/virtual-storage';
 import type { Field } from 'snarkyjs';
-import _ from 'lodash';
+import { cloneDeep } from 'lodash';
 
 import type OffchainStateContract from './offchainStateContract.js';
 import OffchainStateMapRoot from './offchainStateMapRoot.js';
@@ -23,12 +22,9 @@ interface Backup {
   };
 }
 
-type LastUpdatedOffchainState = Record<
-  // map name
-  string,
-  // instance of the last updated offchain state on that map
-  OffchainState<unknown, unknown> | undefined
-> | undefined;
+type LastUpdatedOffchainState =
+  | Record<string, OffchainState<unknown, unknown> | undefined>
+  | undefined;
 
 interface LastUpdatedOffchainStateBackup {
   initial: {
@@ -40,7 +36,7 @@ interface LastUpdatedOffchainStateBackup {
 }
 
 function cloneIfDefined(object: LastUpdatedOffchainState) {
-  return object ? _.cloneDeep(object) : undefined;
+  return object ? cloneDeep(object) : undefined;
 }
 
 class OffchainStateBackup {

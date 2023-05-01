@@ -8,6 +8,7 @@
   },
   "ignorePatterns": ["jest.config.cjs", "jest-stackblitz.config.cjs", "docs/*"],
   "rules": {
+    "@shopify/prefer-class-properties": "off",
     "@typescript-eslint/quotes": [
       "error",
       "single",
