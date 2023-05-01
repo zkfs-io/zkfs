@@ -5,7 +5,7 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 import { VirtualStorage } from '@zkfs/virtual-storage';
 import type { Field } from 'snarkyjs';
-import { cloneDeep } from 'lodash';
+import lodash from 'lodash';
 
 import type OffchainStateContract from './offchainStateContract.js';
 import OffchainStateMapRoot from './offchainStateMapRoot.js';
@@ -36,7 +36,7 @@ interface LastUpdatedOffchainStateBackup {
 }
 
 function cloneIfDefined(object: LastUpdatedOffchainState) {
-  return object ? cloneDeep(object) : undefined;
+  return object ? lodash.cloneDeep(object) : undefined;
 }
 
 class OffchainStateBackup {
