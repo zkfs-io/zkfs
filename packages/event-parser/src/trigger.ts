@@ -45,7 +45,7 @@ class Trigger {
       }, milliseconds);
     }
 
-    // @ts-ignore
+    // @ts-expect-error callback has any type
     return (callback) => {
       queue.push(callback);
       doNext();

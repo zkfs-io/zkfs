@@ -1,6 +1,8 @@
-import { ZkfsNodeConfig } from '@zkfs/node';
+/* eslint-disable import/no-unused-modules */
+import type { ZkfsNodeConfig } from '@zkfs/node';
 import { OrbitDbStorageLight } from '@zkfs/storage-orbit-db';
 import { create as createIpfs } from 'ipfs-core';
+import { VirtualStorage } from '@zkfs/virtual-storage';
 
 import { ipfsLightClientConfig, defaultStorageOptions } from './config.js';
 
@@ -13,9 +15,11 @@ async function createLightClientConfig(
     peerNodeId
   );
   const ipfs = await createIpfs(ipfsConfig);
+  const virtualStorage = new VirtualStorage();
 
   const storage = new OrbitDbStorageLight({
     ipfs,
+    virtualStorage,
     ...defaultStorageOptions,
   });
 

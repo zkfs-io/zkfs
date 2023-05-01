@@ -1,3 +1,5 @@
+/* eslint-disable no-warning-comments */
+/* eslint-disable no-console */
 /* eslint-disable lines-around-comment */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable @typescript-eslint/no-misused-promises */
@@ -109,6 +111,7 @@ class OrbitDbStoragePartial implements StorageAdapter {
     const [[key, value]] = Object.entries(valueRecord);
     // todo check whether store exists before setting
     // shouldn't be possible if store was not registered
+    // eslint-disable-next-line putout/putout
     await this.getValueStore(account)?.set(key, JSON.stringify(value));
   }
 
@@ -116,10 +119,11 @@ class OrbitDbStoragePartial implements StorageAdapter {
    * Get the value store for the given account, and if it exists,
    * get the values for the given keys and return them as a ValueRecord.
    *
-   * @param {Address} account - Address - The address of the account to get the values from
-   * @param {string[]} keys - string[] - An array of keys to get values for.
+   * @param {Address} account - The address to get the values from
+   * @param {string[]} keys - An array of keys to get values for.
    * @returns The values of the keys in the store.
    */
+  // eslint-disable-next-line @typescript-eslint/require-await
   public async getValues(
     account: Address,
     keys: string[]
@@ -132,7 +136,9 @@ class OrbitDbStoragePartial implements StorageAdapter {
     const values: ValueRecord = {};
     for (const key of keys) {
       const value = store.get(key);
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (value !== undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         values[String(key)] = JSON.parse(value);
       }
     }
@@ -195,6 +201,7 @@ class OrbitDbStoragePartial implements StorageAdapter {
       addresses.map(async (address) => {
         const dbAddress = await this.getValueOrbitDbAddress(address);
         // TODO: remove forbidden non-null assertion
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const keyValueStore = await this.orbitDb!.keyvalue<string>(
           dbAddress.toString()
         );
@@ -214,6 +221,7 @@ class OrbitDbStoragePartial implements StorageAdapter {
     return await Promise.all(
       addresses.map(async (address) => {
         const dbAddress = await this.getMapOrbitDbAddress(address);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const keyValueStore = await this.orbitDb!.keyvalue<string>(
           dbAddress.toString()
         );
@@ -279,9 +287,9 @@ class OrbitDbStoragePartial implements StorageAdapter {
     map: string,
     mapName: string
   ): Promise<void> {
-    // eslint-disable-next-line no-warning-comments
     // todo check whether store exists before setting
     // shouldn't be possible if store was not registered
+    // eslint-disable-next-line putout/putout
     await this.getMapStore(account)?.set(mapName, map);
   }
 }

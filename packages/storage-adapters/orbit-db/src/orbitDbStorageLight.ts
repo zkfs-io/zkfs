@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /* eslint-disable max-len */
 /* eslint-disable max-lines */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
@@ -97,6 +98,7 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     try {
       const decodedResponseMessage = new TextDecoder().decode(msg.data);
       const { data } = responseValidation.verify(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         JSON.parse(decodedResponseMessage)
       ).payload;
       return data ?? undefined;
@@ -109,27 +111,24 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
   public validateWitnessInLightClient(data: string) {
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const { witness, metadata } = JSON.parse(data) as WitnessResponseData;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const computedRoot =
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      VirtualStorage.computeRootFromSerializedValueWitness(
-        witness,
-        metadata.value
-      );
+    const computedRoot = VirtualStorage.computeRootFromSerializedValueWitness(
+      witness,
+      metadata.value
+    );
     const { root } = metadata;
 
     if (computedRoot === root) {
-      // todo: save witness to virtual storage after merge of PR "witness merging"
+      // save witness to virtual storage after merge of PR "witness merging"
     }
     return witness;
-  };
+  }
 
   public override async getWitness(
     account: string,
     mapName: string,
     key: string
   ): Promise<string | undefined> {
-    // eslint-disable-next-line promise/avoid-new
+    // eslint-disable-next-line promise/avoid-new, no-async-promise-executor
     return await new Promise<string | undefined>(async (resolve, reject) => {
       const timeoutId = setTimeout(() => {
         // eslint-disable-next-line prefer-promise-reject-errors
@@ -137,6 +136,7 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
       }, this.lightClientConfig.pubsub.timeout);
 
       // subscribe to response
+      // eslint-disable-next-line putout/putout, @typescript-eslint/require-await
       const onResponseHandler = async (msg: Message) => {
         clearTimeout(timeoutId);
 
@@ -205,7 +205,6 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
 
       try {
         const id = uuidv4();
-        // eslint-disable-next-line max-len
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
         await this.config.ipfs.pubsub.subscribe(
           responseTopicPrefix + id,
@@ -214,7 +213,6 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
 
         // publish request
         const request = this.createGetMapRequest(id, account, mapName);
-        // eslint-disable-next-line max-len
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
         await this.config.ipfs.pubsub.publish(requestTopic, request);
       } catch (error) {
@@ -262,7 +260,6 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
 
         try {
           const id = uuidv4();
-          // eslint-disable-next-line max-len
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
           await this.config.ipfs.pubsub.subscribe(
             responseTopicPrefix + id,
@@ -271,7 +268,6 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
 
           // publish request
           const request = this.createGetValuesRequest(id, account, keys);
-          // eslint-disable-next-line max-len
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
           await this.config.ipfs.pubsub.publish(requestTopic, request);
         } catch (error) {
@@ -327,6 +323,7 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     // for each value record call this.setValue()
     await Promise.all(
       Object.entries(valueRecords).map(
+        // eslint-disable-next-line putout/putout
         async ([key, value]) => await store?.set(key, JSON.stringify(value))
       )
     );
@@ -335,9 +332,11 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     let valueRecordsFromStore: ValueRecord = {};
     Object.keys(valueRecords).forEach((key) => {
       // store was created earlier
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const value = store!.get(key);
       valueRecordsFromStore = {
         ...valueRecordsFromStore,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         [String(key)]: JSON.parse(value),
       };
     });

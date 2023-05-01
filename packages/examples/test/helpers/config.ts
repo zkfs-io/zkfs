@@ -1,3 +1,5 @@
+/* eslint-disable import/no-unused-modules */
+/* eslint-disable @typescript-eslint/naming-convention */
 const partialIpfsConfig = {
   EXPERIMENTAL: { ipnsPubsub: true },
   relay: { enabled: true, hop: { enabled: true, active: true } },

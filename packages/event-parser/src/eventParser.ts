@@ -24,7 +24,7 @@ class EventParser {
   public constructor(
     public mina: typeof Mina,
     public options = defaultOption
-  ) { }
+  ) {}
 
   public getLastProcessedBlock(events: Events): UInt32 {
     // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
@@ -85,7 +85,6 @@ class EventParser {
 
   // eslint-disable-next-line @typescript-eslint/require-await
   public async initialize(zkfsNode: ZkfsNode<OrbitDbStoragePartial>) {
-    // for local fetching
     this.zkfsNode = zkfsNode;
 
     const { addresses } = zkfsNode.storage.config;
@@ -110,10 +109,11 @@ class EventParser {
   }
 
   public async fetchEventsForAddress(publicKey: PublicKey) {
-    // todo: add support for zkApps with tokenId
     const filterOptions = { from: this.getLastSeen(publicKey).add(1) };
     const events = await this.mina.fetchEvents(
       publicKey,
+
+      // fetches events for default token id
       Field(1),
       filterOptions
     );

@@ -215,17 +215,11 @@ class OffchainState<KeyType, ValueType> {
       //   return this.witness;
       // }
 
-      const witness = this.contract.virtualStorage.getWitness(
+      return this.contract.virtualStorage.getWitness(
         this.contract.address.toBase58(),
         this.parent.mapName.toString(),
         this.key.toString()
       );
-
-      if (!witness) {
-        throw errors.witnessNotFound();
-      }
-
-      return witness;
     });
 
     return this.witness;

@@ -19,7 +19,12 @@
     "@types/lodash": "^4.14.191",
     "snarkyjs": "^0.8.0",
     "@zkfs/contract-api": "*",
-    "@zkfs/safe-math": "*"
+    "@zkfs/safe-math": "*",
+    "@zkfs/virtual-storage": "*",
+    "@zkfs/storage-orbit-db": "*",
+    "@zkfs/node": "*",
+    "@zkfs/orbit-db-data-pubsub": "*",
+    "ipfs-core": "^0.18.0"
   },
   "devDependencies": {
     "eslint": "^8.33.0",

@@ -69,6 +69,7 @@ interface ZkfsNode<Storage extends StorageAdapter> {
   start: () => Promise<void>;
 }
 
+// eslint-disable-next-line import/no-unused-modules
 export type {
   Service,
   ZkfsNodeConfig,

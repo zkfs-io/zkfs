@@ -69,8 +69,9 @@ async function handleGetWitnessRequest(
   const encodedMessage = encodeMessage(response);
 
   const topic = responseTopicPrefix + request.id;
+  // eslint-disable-next-line max-len
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, unicorn/consistent-destructuring
   await zkfsNode.storage.config.ipfs.pubsub.publish(topic, encodedMessage);
 }
 
 export default handleGetWitnessRequest;
-export type { WitnessResponseData };

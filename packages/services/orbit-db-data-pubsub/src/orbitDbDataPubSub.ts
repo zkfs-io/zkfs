@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /* eslint-disable func-style */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable unicorn/prevent-abbreviations */
@@ -9,7 +10,6 @@ import type { Message } from '@libp2p/interface-pubsub';
 import type OrbitDbStoragePartial from '../../../storage-adapters/orbit-db/src/orbitDbStoragePartial.js';
 import type {
   Service,
-  StorageAdapter,
   ZkfsNode,
   // eslint-disable-next-line import/no-relative-packages
 } from '../../../node/src/interface.js';
@@ -27,14 +27,12 @@ import {
 const getMapRequestValidation =
   validatorFactory<RequestSchemaType>(requestSchema);
 
-class OrbitDbDataPubSub implements Service<StorageAdapter> {
+class OrbitDbDataPubSub implements Service<OrbitDbStoragePartial> {
   /**
    * It subscribes to the request and handles incoming requests
    *
    * @param zkfsNode - ZkfsNode<OrbitDbStoragePartial>
    */
-  // TODO: make services generic
-  // @ts-expect-error
   public async initialize(
     zkfsNode: ZkfsNode<OrbitDbStoragePartial>
   ): Promise<void> {
@@ -70,7 +68,6 @@ class OrbitDbDataPubSub implements Service<StorageAdapter> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
     await pubsub.subscribe(requestTopic, handleRequest);
   }
-
 }
 
 export default OrbitDbDataPubSub;

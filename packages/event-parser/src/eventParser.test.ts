@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { isReady, type Mina } from 'snarkyjs';
 import { OrbitDbStoragePartial } from '@zkfs/storage-orbit-db';
 import { VirtualStorage } from '@zkfs/virtual-storage';
 import type { IPFS } from 'ipfs-core';
 import { ZkfsNode } from '@zkfs/node';
+// eslint-disable-next-line @typescript-eslint/no-shadow
 import { jest } from '@jest/globals';
 import type { ValueRecord } from '@zkfs/node/src/interface.js';
 
@@ -14,6 +16,15 @@ import {
 } from '../test/eventData.js';
 
 import EventParser from './eventParser.js';
+
+// eslint-disable-next-line func-style
+const mockImplementation = async (
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  account: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  valueRecord: ValueRecord
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+) => {};
 
 describe('eventParser', () => {
   beforeAll(async () => {
@@ -32,6 +43,7 @@ describe('eventParser', () => {
       addresses: [address],
       virtualStorage,
       bootstrap: { interval: 1000, timeout: 15_000 },
+      // eslint-disable-next-line putout/putout
       ipfs: mockIpfs,
     });
   });
@@ -39,10 +51,7 @@ describe('eventParser', () => {
   it('parses events for piggyBank example', async () => {
     expect.assertions(3);
 
-    // eslint-disable-next-line putout/putout
-    const mockStorageSetValue = jest.fn(
-      async (account: string, valueRecord: ValueRecord) => { }
-    );
+    const mockStorageSetValue = jest.fn(mockImplementation);
     storage.setValue = mockStorageSetValue;
 
     const mockMina = {
@@ -85,10 +94,7 @@ describe('eventParser', () => {
   it('parses events for counter example', async () => {
     expect.assertions(2);
 
-    // eslint-disable-next-line putout/putout
-    const mockStorageSetValue = jest.fn(
-      async (account: string, valueRecord: ValueRecord) => { }
-    );
+    const mockStorageSetValue = jest.fn(mockImplementation);
     storage.setValue = mockStorageSetValue;
 
     const mockMina = {
@@ -121,10 +127,7 @@ describe('eventParser', () => {
   it('parses events for concurrentCounter example', async () => {
     expect.assertions(3);
 
-    // eslint-disable-next-line putout/putout
-    const mockStorageSetValue = jest.fn(
-      async (account: string, valueRecord: ValueRecord) => { }
-    );
+    const mockStorageSetValue = jest.fn(mockImplementation);
     storage.setValue = mockStorageSetValue;
 
     const mockMina = {

@@ -46,15 +46,19 @@ interface WitnessResponseData {
   witness: string;
 }
 
-interface ValidatorFactoryReturn<T> {
+interface ValidatorFactoryReturn<ResponseType> {
   schema: TObject;
-  verify: (data: T) => T;
+  verify: (data: ResponseType) => ResponseType;
 }
 
-function validatorFactory<T>(schema: TObject): ValidatorFactoryReturn<T> {
+// eslint-disable-next-line etc/no-misused-generics
+function validatorFactory<ResponseType>(
+  schema: TObject
+): ValidatorFactoryReturn<ResponseType> {
   const compiler = TypeCompiler.Compile(schema);
 
-  const verify = function (data: T): T {
+  // eslint-disable-next-line func-style
+  const verify = function (data: ResponseType): ResponseType {
     const isValid = compiler.Check(data);
     if (isValid) {
       return data;
@@ -72,13 +76,14 @@ function validatorFactory<T>(schema: TObject): ValidatorFactoryReturn<T> {
   return { schema, verify };
 }
 
-export type { RequestSchemaType, ResponseSchemaType };
-
+// eslint-disable-next-line import/no-unused-modules
 export {
   validatorFactory,
   requestSchema,
+  type RequestSchemaType,
   responseSchema,
+  type ResponseSchemaType,
   requestTopic,
   responseTopicPrefix,
-  type WitnessResponseData
+  type WitnessResponseData,
 };

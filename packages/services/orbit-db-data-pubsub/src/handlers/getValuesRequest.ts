@@ -20,8 +20,10 @@ async function handleGetWitnessRequest(
 
   const valueRecords = await zkfsNode.storage.getValues(
     account,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     JSON.parse(keys)
   );
+  // eslint-disable-next-line unicorn/no-null
   const data = valueRecords ? JSON.stringify(valueRecords) : null;
 
   const response: ResponseSchemaType = {
@@ -32,6 +34,8 @@ async function handleGetWitnessRequest(
   const encodedMessage = new TextEncoder().encode(message);
 
   const topic = responseTopicPrefix + request.id;
+  // eslint-disable-next-line max-len
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
   await zkfsNode.storage.config.ipfs.pubsub.publish(topic, encodedMessage);
 }
 

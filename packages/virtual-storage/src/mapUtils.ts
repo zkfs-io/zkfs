@@ -61,7 +61,7 @@ function deserializeMap(serializedTree: string): MerkleMap {
   const tree = JSON.parse(serializedTree) as SerializedTree;
   const map = new MerkleMap();
 
-  // eslint-disable-next-line new-cap, putout/putout
+  // eslint-disable-next-line putout/putout
   const zeroes = tree.zeroes.map<Field>((zero) => Field(zero));
   // eslint-disable-next-line putout/putout
   const nodes = Object.entries(tree.nodes).reduce<SerializableTree['nodes']>(
@@ -74,7 +74,7 @@ function deserializeMap(serializedTree: string): MerkleMap {
       nodes[keyNumber] = childNodes.reduce<Record<string, Field>>(
         // eslint-disable-next-line @typescript-eslint/no-shadow
         (nestedValue, [key, value]) => {
-          // eslint-disable-next-line no-param-reassign, new-cap
+          // eslint-disable-next-line no-param-reassign
           nestedValue[key] = Field(value);
           return nestedValue;
         },
@@ -97,9 +97,11 @@ function serializeWitness(witness: MerkleMapWitness): string {
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const witnessObject = witness as unknown as SerializeableWitness;
 
-  const siblings = witnessObject.siblings.map<string>((p) => p.toString());
-  const isLefts = witnessObject.isLefts.map<string>((l) =>
-    String(l.toBoolean())
+  const siblings = witnessObject.siblings.map<string>((sibling) =>
+    sibling.toString()
+  );
+  const isLefts = witnessObject.isLefts.map<string>((isLeft) =>
+    String(isLeft.toBoolean())
   );
 
   const serializedWitness: SerializedWitness = {
@@ -114,8 +116,10 @@ function deserializeWitness(serializedWitness: string): MerkleMapWitness {
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const witness = JSON.parse(serializedWitness) as SerializedWitness;
 
-  const siblings = witness.siblings.map<Field>((p) => Field(p));
-  const isLefts = witness.isLefts.map<Bool>((l) => Bool(l === 'true'));
+  const siblings = witness.siblings.map<Field>((sibling) => Field(sibling));
+  const isLefts = witness.isLefts.map<Bool>((isLeft) =>
+    Bool(isLeft === 'true')
+  );
 
   return new MerkleMapWitness(isLefts, siblings);
 }
