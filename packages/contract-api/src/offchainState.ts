@@ -330,6 +330,7 @@ class OffchainState<KeyType, ValueType> {
    *
    * @returns The root hash and key of the parent tree.
    */
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   public getComputedParentRootHashAndKey(): [Field, Field] {
     if (!this.witness) {
       throw errors.witnessNotFound();
