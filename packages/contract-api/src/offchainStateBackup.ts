@@ -42,7 +42,10 @@ function cloneIfDefined(object: LastUpdatedOffchainState) {
 class OffchainStateBackup {
   public static isProving = false;
 
-  public static virtualStorage = new VirtualStorage();
+  public static virtualStorage = new VirtualStorage({
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    useCachedWitnesses: true,
+  });
 
   public static virtualStorageBackup: Backup = { initial: {}, latest: {} };
 
@@ -55,7 +58,8 @@ class OffchainStateBackup {
     };
 
   public static resetVirtualStorage() {
-    this.virtualStorage = new VirtualStorage();
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    this.virtualStorage = new VirtualStorage({ useCachedWitnesses: true });
   }
 
   public static backupInitial(target: OffchainStateContract) {

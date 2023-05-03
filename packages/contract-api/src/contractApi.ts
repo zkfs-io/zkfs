@@ -13,7 +13,8 @@ type Transaction = Awaited<ReturnType<typeof Mina.transaction>>;
  * function in a Mina transaction
  */
 class ContractApi {
-  public virtualStorage = new VirtualStorage();
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  public virtualStorage = new VirtualStorage({ useCachedWitnesses: true });
 
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   public constructor(public node?: ZkfsNode<OrbitDbStoragePartial>) {}

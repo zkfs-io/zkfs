@@ -15,7 +15,8 @@ async function createLightClientConfig(
     peerNodeId
   );
   const ipfs = await createIpfs(ipfsConfig);
-  const virtualStorage = new VirtualStorage();
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  const virtualStorage = new VirtualStorage({ useCachedWitnesses: true });
 
   const storage = new OrbitDbStorageLight({
     ipfs,

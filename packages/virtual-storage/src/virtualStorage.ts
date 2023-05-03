@@ -56,6 +56,9 @@ class VirtualStorage {
 
   public witnesses: { [key: string]: MerkleMapWitness | undefined } = {};
 
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  public constructor(public config = { useCachedWitnesses: false }) {}
+
   /**
    * Returns stored data for the given address
    *
@@ -171,20 +174,26 @@ class VirtualStorage {
     mapName: string,
     key: string
   ): MerkleMapWitness {
-    const map = this.getMap(address, mapName);
+    // eslint-disable-next-line @typescript-eslint/init-declarations
+    let witness: MerkleMapWitness | undefined;
 
-    let witness = this.witnesses[this.getCombinedKey(mapName, key)];
+    if (this.config.useCachedWitnesses) {
+      witness = this.witnesses[this.getCombinedKey(mapName, key)];
+    }
 
     if (witness) {
       return witness;
     }
 
+    const map = this.getMap(address, mapName);
     witness ??= map.getWitness(
       // eslint-disable-next-line new-cap
       Field(key)
     );
 
-    this.witnesses[this.getCombinedKey(mapName, key)] = witness;
+    if (this.config.useCachedWitnesses) {
+      this.witnesses[this.getCombinedKey(mapName, key)] = witness;
+    }
 
     return witness;
   }
