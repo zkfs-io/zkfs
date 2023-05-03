@@ -48,8 +48,33 @@ class EventParser {
     );
   }
 
+  public processEventsVirtualStorage(events: Events, publicKey: PublicKey) {
+    for (const eventsPerBlock of events) {
+      for (const event of eventsPerBlock.events) {
+        const depth = Number(event[0]);
+
+        const map = event[depth - 1];
+        const keyInMap = event[depth];
+        const valueStartsFromIndex = depth + 1;
+        const value = event.slice(valueStartsFromIndex);
+
+        if (this.zkfsNode === undefined) {
+          throw new Error('Call first initialize() on eventParser.');
+        }
+
+        // update the stored serialized merkle map
+        this.zkfsNode.storage.virtualStorage.setSerializedValue(
+          publicKey.toBase58(),
+          map,
+          keyInMap,
+          value
+        );
+      }
+    }
+  }
+
   // eslint-disable-next-line max-statements
-  public async processEvents(events: Events, publicKey: PublicKey) {
+  public async processEventsDataStore(events: Events, publicKey: PublicKey) {
     for (const eventsPerBlock of events) {
       for (const event of eventsPerBlock.events) {
         const depth = Number(event[0]);
@@ -119,7 +144,9 @@ class EventParser {
     );
 
     const sortedEvents = sortEventsAscending(events);
-    await this.processEvents(sortedEvents, publicKey);
+
+    this.processEventsVirtualStorage(sortedEvents, publicKey);
+    await this.processEventsDataStore(sortedEvents, publicKey);
 
     const lastSeen = this.getLastProcessedBlock(sortedEvents);
     this.setLastSeen(publicKey, lastSeen);
@@ -137,7 +164,9 @@ class EventParser {
         ? lastProcessedBlock
         : lastProcessedBlock.add(1)
     );
-    await this.processEvents(filteredEvents, publicKey);
+
+    this.processEventsVirtualStorage(sortedEvents, publicKey);
+    await this.processEventsDataStore(sortedEvents, publicKey);
 
     const lastSeen = this.getLastProcessedBlock(filteredEvents);
     this.setLastSeen(publicKey, lastSeen);
