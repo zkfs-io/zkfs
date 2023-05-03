@@ -12,6 +12,9 @@ import { OrbitDbDataPubSub } from '@zkfs/orbit-db-data-pubsub';
 import { VirtualStorage } from '@zkfs/virtual-storage';
 import { EventParser } from '@zkfs/event-parser';
 import type { Mina } from 'snarkyjs';
+import { Consensus } from '@zkfs/consensus-bridge';
+// eslint-disable-next-line @typescript-eslint/no-shadow
+import { jest } from '@jest/globals';
 
 import {
   createIpfsConfigEmptyBootstrap,
@@ -24,6 +27,7 @@ import type { ZkfsNodeConfig, ZkfsWriterNodeConfig } from './interface.js';
 
 const account = 'B62qiyp9W7f4j9gf1Y5zrKGGxih9KwMb1mtpFsUb1QRPBfkKQ17SPAY';
 
+// eslint-disable-next-line max-statements
 async function setupPartialNode() {
   const ipfs = await createIpfs(
     createIpfsConfigEmptyBootstrap('ipfs-partial-node')
@@ -42,13 +46,28 @@ async function setupPartialNode() {
     virtualStorage,
   });
 
-  const orbitDbDataPubSub = new OrbitDbDataPubSub();
+  const mockFunction = jest.fn();
+
+  // eslint-disable-next-line id-length, no-plusplus
+  for (let i = 0; i < piggyBankTestData.offchainStateRootHashes.length; i++) {
+    mockFunction.mockImplementationOnce(() => ({
+      zkapp: { appState: [piggyBankTestData.offchainStateRootHashes.at(i)] },
+    }));
+  }
+
   const mockMina = {
     fetchEvents: () => piggyBankTestData.events,
+    getAccount: () => mockFunction(),
   } as unknown as typeof Mina;
+
+  const consensus = new Consensus(mockMina);
+
+  const orbitDbDataPubSub = new OrbitDbDataPubSub();
+
   const eventParser = new EventParser(mockMina, { isLocalTesting: true });
 
   const zkfsNodePartialConfig: ZkfsWriterNodeConfig<OrbitDbStoragePartial> = {
+    consensus,
     storage,
     services: [orbitDbDataPubSub],
     eventParser,
@@ -64,7 +83,8 @@ async function setupLightClientNode(ipfsServerId: string) {
   const ipfs = await createIpfs(
     createIpfsConfigWithBootstrap('ipfs-light-client', [ipfsServerId])
   );
-  const virtualStorage = new VirtualStorage();
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  const virtualStorage = new VirtualStorage({ useCachedWitnesses: true });
   const storage = new OrbitDbStorageLight({
     ipfs,
     bootstrap: { interval: 1000, timeout: 15_000 },
@@ -72,7 +92,15 @@ async function setupLightClientNode(ipfsServerId: string) {
     virtualStorage,
   });
 
+  const mockMina = {
+    getAccount: () => ({
+      zkapp: { appState: [piggyBankTestData.offchainStateRootHashes.at(-1)] },
+    }),
+  } as unknown as typeof Mina;
+  const consensus = new Consensus(mockMina);
+
   const zkfsNodeLightClientConfig: ZkfsNodeConfig<OrbitDbStorageLight> = {
+    consensus,
     storage,
   };
   const lightClientNode = ZkfsNode.withLightClient(zkfsNodeLightClientConfig);
@@ -81,10 +109,10 @@ async function setupLightClientNode(ipfsServerId: string) {
   return lightClientNode;
 }
 
-function getTestDataKeys() {
+function getPiggyBankKeys() {
   const mapName = piggyBankTestData.maps.depositsMap.name;
   const key =
-    '2879140883079234083739072433302655428620676912090406234791507627086874611706';
+    '18932931052585860264259247032555522188856103737430924825470907389007628214933';
 
   const virtualStorage = new VirtualStorage();
   const combinedKey = virtualStorage.getCombinedKey(mapName, key);
@@ -103,7 +131,15 @@ describe('zkfsNode', () => {
       // eslint-disable-next-line putout/putout
       await peerNode.eventParser?.fetchLocalEvents();
 
-      const { mapName, key, combinedKey } = getTestDataKeys();
+      const { mapName, key, combinedKey } = getPiggyBankKeys();
+
+      // eslint-disable-next-line max-len
+      // essential to obtain the root map witness for the light client to perform accessController validation
+      await lightClientNode.storage.getWitness(
+        account,
+        piggyBankTestData.maps.rootMap.name,
+        mapName
+      );
 
       const serializedWitness = await lightClientNode.storage.getWitness(
         account,
@@ -122,6 +158,6 @@ describe('zkfsNode', () => {
       expect(computedRoot).toStrictEqual(
         piggyBankTestData.maps.depositsMap.hash
       );
-    }, 40_000);
+    }, 50_000);
   });
 });

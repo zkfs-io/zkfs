@@ -9,6 +9,7 @@ import { TextEncoder, TextDecoder } from 'node:util';
 import { v4 as uuidv4 } from 'uuid';
 import type { Message } from '@libp2p/interface-pubsub';
 import { VirtualStorage } from '@zkfs/virtual-storage';
+import { deserializeWitness } from '@zkfs/virtual-storage/dist/mapUtils.js';
 
 import {
   type RequestSchemaType,
@@ -108,7 +109,10 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     }
   }
 
-  public validateWitnessInLightClient(data: string) {
+  public validateWitnessInLightClient(
+    combinedKey: string,
+    data: string
+  ): string | undefined {
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const { witness, metadata } = JSON.parse(data) as WitnessResponseData;
     const computedRoot = VirtualStorage.computeRootFromSerializedValueWitness(
@@ -117,9 +121,14 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     );
     const { root } = metadata;
 
-    if (computedRoot === root) {
-      // save witness to virtual storage after merge of PR "witness merging"
+    if (computedRoot !== root) {
+      // logic should be to ignore this response and continue processing other incoming responses
+      return undefined;
     }
+
+    const deserializedWitness = deserializeWitness(witness);
+    this.virtualStorage.witnesses[combinedKey] = deserializedWitness;
+
     return witness;
   }
 
@@ -128,6 +137,8 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     mapName: string,
     key: string
   ): Promise<string | undefined> {
+    const combinedKey = this.virtualStorage.getCombinedKey(mapName, key);
+
     // eslint-disable-next-line promise/avoid-new, no-async-promise-executor
     return await new Promise<string | undefined>(async (resolve, reject) => {
       const timeoutId = setTimeout(() => {
@@ -144,7 +155,7 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
         if (data === undefined) {
           resolve(undefined);
         } else {
-          const witness = this.validateWitnessInLightClient(data);
+          const witness = this.validateWitnessInLightClient(combinedKey, data);
           resolve(witness);
         }
       };
@@ -158,7 +169,6 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
         );
 
         // publish request
-        const combinedKey = this.virtualStorage.getCombinedKey(mapName, key);
         const request = this.createGetWitnessRequest(id, account, combinedKey);
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
         await this.config.ipfs.pubsub.publish(requestTopic, request);
@@ -322,10 +332,19 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
 
     // for each value record call this.setValue()
     await Promise.all(
-      Object.entries(valueRecords).map(
-        // eslint-disable-next-line putout/putout
-        async ([key, value]) => await store?.set(key, JSON.stringify(value))
-      )
+      // eslint-disable-next-line consistent-return
+      Object.entries(valueRecords).map(async ([key, value]) => {
+        try {
+          // eslint-disable-next-line putout/putout
+          return await store?.set(key, JSON.stringify(value));
+        } catch (error) {
+          console.error('Not able to set value', {
+            valueRecord: { key, value },
+            account,
+            error,
+          });
+        }
+      })
     );
 
     // get all value records from db
@@ -406,7 +425,13 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
       );
     }
     const dbAddress = await this.getValueOrbitDbAddress(account);
-    return await this.orbitDb.keyvalue<string>(dbAddress.toString());
+    return await this.orbitDb.keyvalue<string>(
+      dbAddress.toString(),
+
+      // @ts-expect-error orbit-db types are wrong
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      { accessController: { type: 'zkfs-beta', skipManifest: true } }
+    );
   }
 }
 

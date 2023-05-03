@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /* eslint-disable no-warning-comments */
 /* eslint-disable no-console */
 /* eslint-disable lines-around-comment */
@@ -12,6 +13,10 @@ import OrbitDB from 'orbit-db';
 import type KeyValueStore from 'orbit-db-kvstore';
 import type { IPFS } from 'ipfs-core';
 import type { VirtualStorage } from '@zkfs/virtual-storage';
+import AccessControllers from 'orbit-db-access-controllers';
+
+// eslint-disable-next-line import/no-relative-packages
+import type { ConsensusBridge } from '../../../node/src/interface.js';
 
 import type {
   StorageAdapter,
@@ -21,6 +26,7 @@ import type {
   OrbitDbAddress,
 } from './interface.js';
 import errorBootstrapNodesNotConnected from './errors.js';
+import ZkfsAccessController from './accessController.js';
 
 interface PartialPeersResult {
   peer: PeerId;
@@ -111,8 +117,12 @@ class OrbitDbStoragePartial implements StorageAdapter {
     const [[key, value]] = Object.entries(valueRecord);
     // todo check whether store exists before setting
     // shouldn't be possible if store was not registered
-    // eslint-disable-next-line putout/putout
-    await this.getValueStore(account)?.set(key, JSON.stringify(value));
+    try {
+      // eslint-disable-next-line putout/putout
+      await this.getValueStore(account)?.set(key, JSON.stringify(value));
+    } catch (error) {
+      console.error('Not able to set value', { valueRecord, account, error });
+    }
   }
 
   /**
@@ -173,8 +183,19 @@ class OrbitDbStoragePartial implements StorageAdapter {
     );
   }
 
-  public async initialize(): Promise<void> {
-    this.orbitDb = await OrbitDB.createInstance(this.config.ipfs);
+  public async initialize(consensus: ConsensusBridge): Promise<void> {
+    ZkfsAccessController.virtualStorage = this.virtualStorage;
+    ZkfsAccessController.consensus = consensus;
+
+    AccessControllers.addAccessController({
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      AccessController: ZkfsAccessController,
+    });
+
+    this.orbitDb = await OrbitDB.createInstance(this.config.ipfs, {
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      AccessControllers,
+    });
 
     // create for list of addresses all map orbit-db stores
     const orbitDbStoresMapArray = await this.createAndLoadMapStores(
@@ -203,7 +224,10 @@ class OrbitDbStoragePartial implements StorageAdapter {
         // TODO: remove forbidden non-null assertion
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const keyValueStore = await this.orbitDb!.keyvalue<string>(
-          dbAddress.toString()
+          dbAddress.toString(),
+          // @ts-expect-error orbit-db types are wrong
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          { accessController: { type: 'zkfs-beta', skipManifest: true } }
         );
         await keyValueStore.load();
 

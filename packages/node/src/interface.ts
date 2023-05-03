@@ -8,7 +8,7 @@ type ValueRecord = Record<string, string[]>;
 interface StorageAdapter {
   isReady: () => Promise<void>;
 
-  initialize: () => Promise<void>;
+  initialize: (consensus: ConsensusBridge) => Promise<void>;
 
   // returns serializedWitness
   getWitness: (
@@ -16,9 +16,6 @@ interface StorageAdapter {
     mapName: string,
     key: string
   ) => Promise<string | undefined>;
-
-  // writer node needs to have event parser configured
-  // light-client uses different implementation, without event parser
 
   /**
    * @deprecated The method should not be used
@@ -50,20 +47,30 @@ interface Service<Storage extends StorageAdapter> {
   initialize: (zkfsNode: ZkfsNode<Storage>) => Promise<void>;
 }
 
+interface ConsensusBridge {
+  verifyComputedRoot: (
+    account: Address,
+    computedRoot: string
+  ) => Promise<boolean>;
+}
+
 interface ZkfsNodeConfig<Storage extends StorageAdapter> {
   storage: Storage;
+  consensus: ConsensusBridge;
   services?: Service<Storage>[];
   eventParser?: EventParserAdapter<Storage>;
 }
 
 interface ZkfsWriterNodeConfig<Storage extends StorageAdapter> {
   storage: Storage;
+  consensus: ConsensusBridge;
   services: Service<Storage>[];
   eventParser: EventParserAdapter<Storage>;
 }
 
 interface ZkfsNode<Storage extends StorageAdapter> {
   storage: Storage;
+  consensus: ConsensusBridge;
   services?: Service<Storage>[];
   eventParser?: EventParserAdapter<Storage>;
   start: () => Promise<void>;
@@ -79,4 +86,5 @@ export type {
   Address,
   EventParserAdapter,
   ZkfsWriterNodeConfig,
+  ConsensusBridge,
 };

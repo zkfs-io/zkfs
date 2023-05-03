@@ -10,6 +10,7 @@ import type {
   StorageAdapter,
   EventParserAdapter,
   ZkfsWriterNodeConfig,
+  ConsensusBridge,
 } from './interface.js';
 
 class ZkfsNode<Storage extends StorageAdapter> implements ZkfsNode<Storage> {
@@ -29,10 +30,13 @@ class ZkfsNode<Storage extends StorageAdapter> implements ZkfsNode<Storage> {
 
   public eventParser: EventParserAdapter<Storage> | undefined;
 
+  public consensus: ConsensusBridge;
+
   public constructor(config: ZkfsNodeConfig<Storage>) {
     this.storage = config.storage;
     this.services = config.services ?? [];
     this.eventParser = config.eventParser ?? undefined;
+    this.consensus = config.consensus;
   }
 
   public startServices() {
@@ -61,7 +65,7 @@ class ZkfsNode<Storage extends StorageAdapter> implements ZkfsNode<Storage> {
 
   public async start() {
     await this.storage.isReady();
-    await this.storage.initialize();
+    await this.storage.initialize(this.consensus);
     this.startServices();
     this.startEventParser();
   }
