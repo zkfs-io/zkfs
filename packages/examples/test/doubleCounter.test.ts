@@ -93,7 +93,6 @@ describeContract<DoubleCounter>('doubleCounter', DoubleCounter, (context) => {
       'transaction',
       async () =>
         await contractApi.transaction(zkApp, senderAccount, () => {
-          console.log('running update');
           zkApp.update();
         })
     );

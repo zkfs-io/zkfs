@@ -86,6 +86,7 @@ class ContractApi {
 
         // save fetched witnesses to virtual storage
         this.virtualStorage.setSerializedWitness(
+          address,
           mapKeyData.mapName,
           mapKeyData.key,
           witness

@@ -110,7 +110,9 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
   }
 
   public validateWitnessInLightClient(
-    combinedKey: string,
+    account: string,
+    mapName: string,
+    key: string,
     data: string
   ): string | undefined {
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
@@ -126,8 +128,7 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
       return undefined;
     }
 
-    const deserializedWitness = deserializeWitness(witness);
-    this.virtualStorage.witnesses[combinedKey] = deserializedWitness;
+    this.virtualStorage.setSerializedWitness(account, mapName, key, witness);
 
     return witness;
   }
@@ -155,7 +156,12 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
         if (data === undefined) {
           resolve(undefined);
         } else {
-          const witness = this.validateWitnessInLightClient(combinedKey, data);
+          const witness = this.validateWitnessInLightClient(
+            account,
+            mapName,
+            key,
+            data
+          );
           resolve(witness);
         }
       };
