@@ -1,9 +1,11 @@
+/* eslint-disable max-statements */
 import { Mina, type Proof, type ZkappPublicInput } from 'snarkyjs';
 import { VirtualStorage } from '@zkfs/virtual-storage';
 import type { ZkfsNode } from '@zkfs/node';
-import type { OrbitDbStoragePartial } from '@zkfs/storage-orbit-db';
+import type { OrbitDbStorageLight } from '@zkfs/storage-orbit-db';
 
 import type OffchainStateContract from './offchainStateContract.js';
+import { type OffchainStateKeys, getMapKeyData } from './fetchOffchainState.js';
 
 // eslint-disable-next-line etc/no-deprecated
 type Transaction = Awaited<ReturnType<typeof Mina.transaction>>;
@@ -17,7 +19,7 @@ class ContractApi {
   public virtualStorage = new VirtualStorage({ useCachedWitnesses: true });
 
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
-  public constructor(public node?: ZkfsNode<OrbitDbStoragePartial>) {}
+  public constructor(public node?: ZkfsNode<OrbitDbStorageLight>) {}
 
   /**
    * This function restores the latest offchain state of a contract.
@@ -42,11 +44,74 @@ class ContractApi {
    * @param {OffchainStateContract} contract
    * The contract object that is being called.
    */
-  // eslint-disable-next-line max-len
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types, @typescript-eslint/require-await
-  public async fetchOffchainState(contract: OffchainStateContract) {
+  public async fetchOffchainState(
+    // eslint-disable-next-line max-len
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+    contract: OffchainStateContract,
+    // eslint-disable-next-line max-len
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+    offchainStateKeys?: OffchainStateKeys
+  ) {
     // eslint-disable-next-line no-param-reassign
     contract.virtualStorage = this.virtualStorage;
+
+    // skip if no offchain state keys for fetching were provided
+    if (!offchainStateKeys) {
+      return;
+    }
+
+    // light-client is necessary for fetching offchain state
+    if (!this.node) {
+      throw new Error(
+        'Please configure ZKFS node as light client for contract API'
+      );
+    }
+
+    const mapKeys = getMapKeyData(offchainStateKeys);
+
+    const address = contract.address.toBase58();
+
+    await Promise.all(
+      mapKeys.map(async (mapKeyData) => {
+        // fetch witnesses from ZKFS node
+        // eslint-disable-next-line putout/putout
+        const witness = await this.node?.storage.getWitness(
+          address,
+          mapKeyData.mapName,
+          mapKeyData.key
+        );
+        if (witness === undefined) {
+          return;
+        }
+
+        // save fetched witnesses to virtual storage
+        this.virtualStorage.setSerializedWitness(
+          mapKeyData.mapName,
+          mapKeyData.key,
+          witness
+        );
+      })
+    );
+
+    const valuesToFetch = mapKeys.filter((mapKeyData) => mapKeyData.isValue);
+    const combinedKeysToFetch = valuesToFetch.map((mapKeyData) =>
+      this.virtualStorage.getCombinedKey(mapKeyData.mapName, mapKeyData.key)
+    );
+
+    // fetch values from ZKFS node
+    const values = await this.node.storage.getValues(
+      address,
+      combinedKeysToFetch
+    );
+    if (values === undefined) {
+      return;
+    }
+
+    // save fetched values to virtual storage
+    Object.entries(values).forEach(([combinedKey, value]) => {
+      const [mapName, key] = combinedKey.split('-');
+      this.virtualStorage.setSerializedValue(address, mapName, key, value);
+    });
   }
 
   /**
@@ -64,6 +129,7 @@ class ContractApi {
    *
    * @returns A promise of a transaction.
    */
+  // eslint-disable-next-line max-params
   public async transaction(
     // eslint-disable-next-line max-len
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
@@ -71,9 +137,12 @@ class ContractApi {
     // eslint-disable-next-line max-len
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     sender: Mina.FeePayerSpec,
-    transactionCallback: () => void
+    transactionCallback: () => void,
+    // eslint-disable-next-line max-len
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+    data?: OffchainStateKeys
   ): Promise<Transaction> {
-    await this.fetchOffchainState(contract);
+    await this.fetchOffchainState(contract, data);
 
     return await Mina.transaction(sender, () => {
       transactionCallback();
