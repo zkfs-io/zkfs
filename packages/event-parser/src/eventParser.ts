@@ -31,13 +31,13 @@ class EventParser {
     return events.at(-1).blockHeight;
   }
 
-  public setLastSeen(publicKey: PublicKey, lastSeen: UInt32) {
+  public setFromBlockHeight(publicKey: PublicKey, lastSeen: UInt32) {
     const addressLastSeen = this.addressLastSeen ?? {};
     addressLastSeen[publicKey.toBase58()] = lastSeen;
     this.addressLastSeen = addressLastSeen;
   }
 
-  public getLastSeen(publicKey: PublicKey): UInt32 {
+  public getFromBlockHeight(publicKey: PublicKey): UInt32 {
     const addressLastSeen = this.addressLastSeen ?? {};
     return addressLastSeen[publicKey.toBase58()] ?? UInt32.from(0);
   }
@@ -134,7 +134,7 @@ class EventParser {
   }
 
   public async fetchEventsForAddress(publicKey: PublicKey) {
-    const filterOptions = { from: this.getLastSeen(publicKey).add(1) };
+    const filterOptions = { from: this.getFromBlockHeight(publicKey).add(1) };
     const events = await this.mina.fetchEvents(
       publicKey,
 
@@ -149,7 +149,7 @@ class EventParser {
     await this.processEventsDataStore(sortedEvents, publicKey);
 
     const lastSeen = this.getLastProcessedBlock(sortedEvents);
-    this.setLastSeen(publicKey, lastSeen);
+    this.setFromBlockHeight(publicKey, lastSeen);
   }
 
   public async fetchAndProcessLocalEventsForAddress(publicKey: PublicKey) {
@@ -157,19 +157,17 @@ class EventParser {
     const sortedEvents = sortEventsAscending(events);
 
     // this workaround exists, because local Mina returns all events
-    const lastProcessedBlock = this.getLastSeen(publicKey);
+    const processFromBlock = this.getFromBlockHeight(publicKey);
     const filteredEvents = this.filterEventsFromBlockHeight(
       sortedEvents,
-      lastProcessedBlock.equals(UInt32.from(0)).toBoolean()
-        ? lastProcessedBlock
-        : lastProcessedBlock.add(1)
+      processFromBlock
     );
 
-    this.processEventsVirtualStorage(sortedEvents, publicKey);
-    await this.processEventsDataStore(sortedEvents, publicKey);
+    this.processEventsVirtualStorage(filteredEvents, publicKey);
+    await this.processEventsDataStore(filteredEvents, publicKey);
 
-    const lastSeen = this.getLastProcessedBlock(filteredEvents);
-    this.setLastSeen(publicKey, lastSeen);
+    const latestProcessedBlock = this.getLastProcessedBlock(filteredEvents);
+    this.setFromBlockHeight(publicKey, latestProcessedBlock.add(1));
   }
 
   /**
