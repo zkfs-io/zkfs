@@ -35,7 +35,7 @@ class ZkfsNode<Storage extends StorageAdapter> implements ZkfsNode<Storage> {
   public constructor(config: ZkfsNodeConfig<Storage>) {
     this.storage = config.storage;
     this.services = config.services ?? [];
-    this.eventParser = config.eventParser ?? undefined;
+    this.eventParser = config.eventParser;
     this.consensus = config.consensus;
   }
 
