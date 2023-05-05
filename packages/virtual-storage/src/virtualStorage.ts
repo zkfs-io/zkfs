@@ -37,8 +37,8 @@ class VirtualStorage {
       // eslint-disable-next-line new-cap
       Field(fieldString)
     );
-
     const valueHash = Poseidon.hash(valueFields);
+
     return witness.computeRootAndKey(valueHash)[0].toString();
   }
 
@@ -262,6 +262,18 @@ class VirtualStorage {
   ): void {
     const serializedValue = value.map((field) => field.toString());
     this.setSerializedValue(address, mapName, key, serializedValue);
+  }
+
+  public setSerializedWitness(
+    mapName: string,
+    key: string,
+    serializedWitness: string
+  ): void {
+    const deserializedWitness = deserializeWitness(serializedWitness);
+
+    const combinedKey = this.getCombinedKey(mapName, key);
+
+    this.witnesses[combinedKey] = deserializedWitness;
   }
 
   /**
