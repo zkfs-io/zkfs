@@ -1,4 +1,3 @@
-/* eslint-disable no-warning-comments */
 /* eslint-disable no-console */
 /* eslint-disable lines-around-comment */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
