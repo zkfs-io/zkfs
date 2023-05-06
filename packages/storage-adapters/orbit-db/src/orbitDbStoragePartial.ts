@@ -89,12 +89,19 @@ class OrbitDbStoragePartial implements StorageAdapter {
     return serializeWitness(witness);
   }
 
+  /**
+   * This function sets a value in the orbit-db for a given account.
+   * This fails silently if the store does not exist, because the account is
+   * not registered or the value doesn't pass the consensus validation.
+   *
+   * @param {string} account
+   * @param {ValueRecord} valueRecord
+   */
   public async setValue(
     account: string,
     valueRecord: ValueRecord
   ): Promise<void> {
     const [[key, value]] = Object.entries(valueRecord);
-    // todo check whether store exists before setting
     // shouldn't be possible if store was not registered
     try {
       // eslint-disable-next-line putout/putout
@@ -157,17 +164,17 @@ class OrbitDbStoragePartial implements StorageAdapter {
   }
 
   public async createAndLoadValueStores(addresses: string[]) {
-    if (!this.orbitDb) {
-      throw new Error(
-        'OrbitDb instance undefined, have you called .initialized()?'
-      );
-    }
     return await Promise.all(
       addresses.map(async (address) => {
         const dbAddress = await this.getValueOrbitDbAddress(address);
-        // TODO: remove forbidden non-null assertion
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const keyValueStore = await this.orbitDb!.keyvalue<string>(
+
+        if (!this.orbitDb) {
+          throw new Error(
+            'OrbitDb instance undefined, have you called .initialized()?'
+          );
+        }
+
+        const keyValueStore = await this.orbitDb.keyvalue<string>(
           dbAddress.toString(),
           // @ts-expect-error orbit-db types are wrong
           // eslint-disable-next-line @typescript-eslint/naming-convention
