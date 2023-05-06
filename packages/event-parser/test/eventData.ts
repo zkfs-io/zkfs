@@ -1,5 +1,4 @@
 /* eslint-disable putout/putout */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { UInt32, isReady } from 'snarkyjs';
 
 import type Events from '../src/types.js';

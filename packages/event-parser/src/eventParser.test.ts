@@ -60,7 +60,7 @@ describe('eventParser', () => {
 
     const mockConsensus = {} as unknown as ConsensusBridge;
 
-    const eventParser = new EventParser(mockMina, { pollingInterval: 360_000 });
+    const eventParser = new EventParser(mockMina, { isLocalTesting: true });
 
     const zkfsNode = new ZkfsNode<OrbitDbStoragePartial>({
       // eslint-disable-next-line putout/putout
