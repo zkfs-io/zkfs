@@ -9,7 +9,6 @@ import { TextEncoder, TextDecoder } from 'node:util';
 import { v4 as uuidv4 } from 'uuid';
 import type { Message } from '@libp2p/interface-pubsub';
 import { VirtualStorage } from '@zkfs/virtual-storage';
-import { deserializeWitness } from '@zkfs/virtual-storage/dist/mapUtils.js';
 
 import {
   type RequestSchemaType,
@@ -32,7 +31,7 @@ import OrbitDbStoragePartial from './orbitDbStoragePartial.js';
 const responseValidation = validatorFactory<ResponseSchemaType>(responseSchema);
 
 /**
- * It's a class that extends the OrbitDbStoragePartial class and overrides the getMap and getValues
+ * It's a class that extends the OrbitDbStoragePartial class and overrides the getValues
  * methods to use the light client
  */
 class OrbitDbStorageLight extends OrbitDbStoragePartial {
@@ -43,23 +42,6 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
   public constructor(config: OrbitDbStorageLightConfig) {
     super({ ...config, addresses: [] });
     this.lightClientConfig = config;
-  }
-
-  /**
-   * It takes a key and an account address and returns a request body that can be sent to the contract
-   *
-   * @param {string} id - A unique identifier for the request.
-   * @param {Address} account - The account address of the user who is making the request.
-   * @param {string} key - The key of the map you want to get.
-   * @returns A byte array of the request body.
-   */
-  public createGetMapRequest(id: string, account: Address, key: string) {
-    const requestBody: RequestSchemaType = {
-      id,
-      type: 'getMap',
-      payload: { key, account },
-    };
-    return new TextEncoder().encode(JSON.stringify(requestBody));
   }
 
   /**
@@ -109,6 +91,7 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     }
   }
 
+  // eslint-disable-next-line max-params
   public validateWitnessInLightClient(
     account: string,
     mapName: string,
@@ -185,59 +168,6 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
   }
 
   /**
-   * It subscribes to a response topic, publishes a request to the request topic,
-   * and then waits for a response to the first topic.
-   *
-   * @param {Address} account - Address - The account address to get the map for
-   * @returns A promise that resolves to a string.
-   */
-  public override async getMap(
-    account: Address,
-    mapName: string
-  ): Promise<string | undefined> {
-    // eslint-disable-next-line promise/avoid-new, no-async-promise-executor
-    return await new Promise<string | undefined>(async (resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        // eslint-disable-next-line prefer-promise-reject-errors
-        reject(undefined);
-      }, this.lightClientConfig.pubsub.timeout);
-
-      // subscribe to response
-      const onResponseHandler = async (msg: Message) => {
-        clearTimeout(timeoutId);
-
-        const data = this.getDataFromPubSubMessage(msg);
-        if (data === undefined) {
-          resolve(undefined);
-        } else {
-          const map = await this.validateMapInLightClient(
-            account,
-            data,
-            mapName
-          );
-          resolve(map);
-        }
-      };
-
-      try {
-        const id = uuidv4();
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        await this.config.ipfs.pubsub.subscribe(
-          responseTopicPrefix + id,
-          onResponseHandler
-        );
-
-        // publish request
-        const request = this.createGetMapRequest(id, account, mapName);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        await this.config.ipfs.pubsub.publish(requestTopic, request);
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  /**
    * It subscribes to a response topic, publishes a request to the topic,
    * and then waits for a response to the first topic.
    *
@@ -294,30 +224,6 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
   }
 
   /**
-   * Setting and getting the received serialized map in the local light client
-   * storage triggers the (write-) access controller of OrbitDb and therefore
-   * validates the received serialized map.
-   *
-   * @param account Mina address
-   * @param map serialized merkle map
-   * @returns serialized merkle map
-   */
-  public async validateMapInLightClient(
-    account: Address,
-    map: string,
-    mapName: string
-  ): Promise<string | undefined> {
-    await this.createMapStoreInstanceIfNotExisting(account);
-
-    // set and retrieve from db store
-    await this.setMap(account, map, mapName);
-
-    // do not call .getMap because the implementation differs from parent
-    const mapStore = this.getMapStore(account);
-    return mapStore?.get(mapName);
-  }
-
-  /**
    * Setting and getting the received valueRecord in the local light client
    * storage triggers the (write-) access controller of OrbitDb and therefore
    * validates the received valueRecords.
@@ -369,23 +275,6 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
   }
 
   /**
-   * If the store instance for the account doesn't exist, create it
-   *
-   * @param {Address} account - Address of the account that is being used to create the map store
-   * instance.
-   */
-  public async createMapStoreInstanceIfNotExisting(account: Address) {
-    if (this.storeInstances && this.getMapStore(account)) {
-      return;
-    }
-
-    const keyValueStore = await this.createGetMapDbStore(account);
-    this.saveStoreInstances([
-      { [this.getZkfsMapPath(account)]: keyValueStore },
-    ]);
-  }
-
-  /**
    * If the storeInstances object doesn't exist or the account's store
    * doesn't exist, create a new store and save it to the storeInstances object
    *
@@ -400,22 +289,6 @@ class OrbitDbStorageLight extends OrbitDbStoragePartial {
     this.saveStoreInstances([
       { [this.getZkfsValuePath(account)]: keyValueStore },
     ]);
-  }
-
-  /**
-   * Create a key-value store for merkle maps for the given account
-   *
-   * @param {Address} account - The account address of the user.
-   * @returns A key value store.
-   */
-  public async createGetMapDbStore(account: Address) {
-    if (!this.orbitDb) {
-      throw new Error(
-        'OrbitDb instance undefined, have you called .initialized()?'
-      );
-    }
-    const dbAddress = await this.getMapOrbitDbAddress(account);
-    return await this.orbitDb.keyvalue<string>(dbAddress.toString());
   }
 
   /**

@@ -14,7 +14,6 @@ import type {
   // eslint-disable-next-line import/no-relative-packages
 } from '../../../node/src/interface.js';
 
-import handleGetMapRequest from './handlers/getMapRequest.js';
 import handleGetValuesRequest from './handlers/getValuesRequest.js';
 import handleGetWitnessRequest from './handlers/getWitnessRequest.js';
 import {
@@ -43,9 +42,6 @@ class OrbitDbDataPubSub implements Service<OrbitDbStoragePartial> {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           JSON.parse(decodedString)
         );
-        if (request.type === 'getMap') {
-          await handleGetMapRequest(zkfsNode, request);
-        }
         if (request.type === 'getValues') {
           await handleGetValuesRequest(zkfsNode, request);
         }

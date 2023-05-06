@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
-type SerializedMerkleMap = string;
 
 // Mina account address as base58
 type Address = string;
@@ -17,24 +16,11 @@ interface StorageAdapter {
     key: string
   ) => Promise<string | undefined>;
 
-  /**
-   * @deprecated The method should not be used
-   */
-  getMap: (
-    account: Address,
-    mapName: string
-  ) => Promise<SerializedMerkleMap | undefined>;
-
   getValues: (
     account: Address,
     keys: string[]
   ) => Promise<ValueRecord | undefined>;
 
-  setMap: (
-    account: Address,
-    map: SerializedMerkleMap,
-    mapName: string
-  ) => Promise<void>;
   setValue: (account: Address, valueRecord: ValueRecord) => Promise<void>;
 }
 

@@ -10,11 +10,7 @@ const requestTopic = 'zkfs:request';
 const requestSchema = Type.Object({
   id: Type.String(),
 
-  type: Type.Union([
-    Type.RegEx(/getMap/u),
-    Type.RegEx(/getValues/u),
-    Type.RegEx(/getWitness/u),
-  ]),
+  type: Type.Union([Type.RegEx(/getValues/u), Type.RegEx(/getWitness/u)]),
 
   payload: Type.Object({
     key: Type.String(),

@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /* eslint-disable no-warning-comments */
 /* eslint-disable no-console */
 /* eslint-disable lines-around-comment */
@@ -57,30 +56,8 @@ class OrbitDbStoragePartial implements StorageAdapter {
     });
   }
 
-  public getZkfsMapPath(account: string) {
-    return `${this.databasePrefix}zkfs.map.${account}`;
-  }
-
   public getZkfsValuePath(account: string) {
     return `${this.databasePrefix}zkfs.value.${account}`;
-  }
-
-  public getMapStore(account: Address): KeyValueStore<string> | undefined {
-    if (!this.storeInstances) {
-      console.error(
-        'Store instances not initialized, have you called .initialize()?'
-      );
-
-      return undefined;
-    }
-    const mapPath = this.getZkfsMapPath(account);
-    if (!this.storeInstances[mapPath]) {
-      console.error(
-        `Failed to fetch map store for unregistered account ${account}`
-      );
-      return undefined;
-    }
-    return this.storeInstances[mapPath];
   }
 
   public getValueStore(account: Address): KeyValueStore<string> | undefined {
@@ -155,34 +132,6 @@ class OrbitDbStoragePartial implements StorageAdapter {
     return Object.keys(values).length > 0 ? values : undefined;
   }
 
-  public async getMap(
-    account: Address,
-    mapName: string
-  ): Promise<string | undefined> {
-    // eslint-disable-next-line promise/avoid-new
-    return await new Promise((resolve) => {
-      const mapStore = this.getMapStore(account);
-      if (mapStore === undefined) {
-        console.log('account not registered in DB');
-        resolve(undefined);
-      } else {
-        resolve(mapStore.get(mapName));
-      }
-    });
-  }
-
-  public async getMapOrbitDbAddress(account: Address) {
-    if (!this.orbitDb) {
-      throw new Error(
-        'OrbitDb instance undefined, have you called .initialized()?'
-      );
-    }
-    return await this.orbitDb.determineAddress(
-      this.getZkfsMapPath(account),
-      'keyvalue'
-    );
-  }
-
   public async initialize(consensus: ConsensusBridge): Promise<void> {
     ZkfsAccessController.virtualStorage = this.virtualStorage;
     ZkfsAccessController.consensus = consensus;
@@ -196,13 +145,6 @@ class OrbitDbStoragePartial implements StorageAdapter {
       // eslint-disable-next-line @typescript-eslint/naming-convention
       AccessControllers,
     });
-
-    // create for list of addresses all map orbit-db stores
-    const orbitDbStoresMapArray = await this.createAndLoadMapStores(
-      this.config.addresses
-    );
-    // save all map store instances
-    this.saveStoreInstances(orbitDbStoresMapArray);
 
     // create for list of addresses all value orbit-db stores
     const orbitDbStoresValueArray = await this.createAndLoadValueStores(
@@ -232,26 +174,6 @@ class OrbitDbStoragePartial implements StorageAdapter {
         await keyValueStore.load();
 
         return { [this.getZkfsValuePath(address)]: keyValueStore };
-      })
-    );
-  }
-
-  public async createAndLoadMapStores(addresses: Address[]) {
-    if (!this.orbitDb) {
-      throw new Error(
-        'OrbitDb instance undefined, have you called .initialized()?'
-      );
-    }
-    return await Promise.all(
-      addresses.map(async (address) => {
-        const dbAddress = await this.getMapOrbitDbAddress(address);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const keyValueStore = await this.orbitDb!.keyvalue<string>(
-          dbAddress.toString()
-        );
-        await keyValueStore.load();
-
-        return { [this.getZkfsMapPath(address)]: keyValueStore };
       })
     );
   }
@@ -304,17 +226,6 @@ class OrbitDbStoragePartial implements StorageAdapter {
         }
       }, this.config.bootstrap.interval);
     });
-  }
-
-  public async setMap(
-    account: Address,
-    map: string,
-    mapName: string
-  ): Promise<void> {
-    // todo check whether store exists before setting
-    // shouldn't be possible if store was not registered
-    // eslint-disable-next-line putout/putout
-    await this.getMapStore(account)?.set(mapName, map);
   }
 }
 
