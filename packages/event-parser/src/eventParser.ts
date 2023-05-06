@@ -12,19 +12,38 @@ import sortEventsAscending from './sortEventsAscending.js';
 import type Events from './types.js';
 import Trigger from './trigger.js';
 
-const defaultOption = {
-  isLocalTesting: false,
-};
+interface EventParserOptions {
+  isLocalTesting?: boolean;
+
+  // defined in milliseconds
+  pollingInterval?: number;
+}
+
+function defaultOptions(options: EventParserOptions = {}) {
+  return {
+    isLocalTesting: options.isLocalTesting ?? false,
+
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    pollingInterval: options.isLocalTesting
+      ? 0
+      : options.pollingInterval ?? 180_000,
+  };
+}
 
 class EventParser {
   public addressLastSeen: { [key: string]: UInt32 | undefined } | undefined;
 
   public zkfsNode: ZkfsNode<OrbitDbStoragePartial> | undefined;
 
+  public options: Required<EventParserOptions>;
+
   public constructor(
     public mina: typeof Mina,
-    public options = defaultOption
-  ) {}
+    options: EventParserOptions = defaultOptions()
+  ) {
+    // Merge the provided options with the default options
+    this.options = { ...defaultOptions(options), ...options };
+  }
 
   public getLastProcessedBlock(events: Events): UInt32 {
     // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
@@ -123,7 +142,7 @@ class EventParser {
     }
 
     // fetch events for all addresses every 180 seconds
-    const trigger = new Trigger(180_000);
+    const trigger = new Trigger(this.options.pollingInterval);
     trigger.register(async () => {
       await Promise.all(
         addresses.map(async (address) => {

@@ -7,7 +7,7 @@ import type { IPFS } from 'ipfs-core';
 import { ZkfsNode } from '@zkfs/node';
 // eslint-disable-next-line @typescript-eslint/no-shadow
 import { jest } from '@jest/globals';
-import type { ValueRecord } from '@zkfs/node/src/interface.js';
+import type { ValueRecord, ConsensusBridge } from '@zkfs/node/src/interface.js';
 
 import {
   counterTestData,
@@ -58,9 +58,13 @@ describe('eventParser', () => {
       fetchEvents: () => piggyBankTestData.events,
     } as unknown as typeof Mina;
 
-    const eventParser = new EventParser(mockMina, { isLocalTesting: true });
+    const mockConsensus = {} as unknown as ConsensusBridge;
+
+    const eventParser = new EventParser(mockMina, { pollingInterval: 360_000 });
 
     const zkfsNode = new ZkfsNode<OrbitDbStoragePartial>({
+      // eslint-disable-next-line putout/putout
+      consensus: mockConsensus,
       storage,
       services: [],
       eventParser,
@@ -101,9 +105,13 @@ describe('eventParser', () => {
       fetchEvents: () => counterTestData.events,
     } as unknown as typeof Mina;
 
+    const mockConsensus = {} as unknown as ConsensusBridge;
+
     const eventParser = new EventParser(mockMina, { isLocalTesting: true });
 
     const zkfsNode = new ZkfsNode<OrbitDbStoragePartial>({
+      // eslint-disable-next-line putout/putout
+      consensus: mockConsensus,
       storage,
       services: [],
       eventParser,
@@ -134,9 +142,13 @@ describe('eventParser', () => {
       fetchEvents: () => concurrentCounterTestData.events,
     } as unknown as typeof Mina;
 
+    const mockConsensus = {} as unknown as ConsensusBridge;
+
     const eventParser = new EventParser(mockMina, { isLocalTesting: true });
 
     const zkfsNode = new ZkfsNode<OrbitDbStoragePartial>({
+      // eslint-disable-next-line putout/putout
+      consensus: mockConsensus,
       storage,
       services: [],
       eventParser,
