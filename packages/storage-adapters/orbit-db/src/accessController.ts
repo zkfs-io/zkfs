@@ -2,6 +2,7 @@
 import AccessControllers from 'orbit-db-access-controllers';
 import type OrbitDB from 'orbit-db';
 import { VirtualStorage } from '@zkfs/virtual-storage';
+import { serializeWitness } from '@zkfs/virtual-storage/dist/mapUtils.js';
 
 // eslint-disable-next-line import/no-relative-packages
 import type { ConsensusBridge } from '../../../node/src/interface.js';
@@ -75,24 +76,26 @@ class ZkfsAccessController extends AccessController {
   ): Promise<boolean> {
     const { address, mapName, keyInMap, value } = extractData(entry);
 
-    const witness = this.virtualStorageInstance.getSerializedWitness(
+    const witness = this.virtualStorageInstance.getWitness(
       address,
       mapName,
       keyInMap
     );
+    const serializedWitness = serializeWitness(witness);
     let computedRoot = VirtualStorage.computeRootFromSerializedValueWitness(
-      witness,
+      serializedWitness,
       value
     );
 
     if (mapName !== rootMap) {
-      const rootWitness = this.virtualStorageInstance.getSerializedWitness(
+      const rootWitness = this.virtualStorageInstance.getWitness(
         address,
         rootMap,
         mapName
       );
+      const serializedRootWitness = serializeWitness(rootWitness);
       computedRoot = VirtualStorage.computeRootFromSerializedValueWitness(
-        rootWitness,
+        serializedRootWitness,
         [computedRoot]
       );
     }

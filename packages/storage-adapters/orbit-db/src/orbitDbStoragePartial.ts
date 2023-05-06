@@ -13,6 +13,7 @@ import type KeyValueStore from 'orbit-db-kvstore';
 import type { IPFS } from 'ipfs-core';
 import type { VirtualStorage } from '@zkfs/virtual-storage';
 import AccessControllers from 'orbit-db-access-controllers';
+import { serializeWitness } from '@zkfs/virtual-storage/dist/mapUtils.js';
 
 // eslint-disable-next-line import/no-relative-packages
 import type { ConsensusBridge } from '../../../node/src/interface.js';
@@ -84,7 +85,8 @@ class OrbitDbStoragePartial implements StorageAdapter {
     mapName: string,
     key: string
   ): Promise<string | undefined> {
-    return this.virtualStorage.getSerializedWitness(account, mapName, key);
+    const witness = this.virtualStorage.getWitness(account, mapName, key);
+    return serializeWitness(witness);
   }
 
   public async setValue(

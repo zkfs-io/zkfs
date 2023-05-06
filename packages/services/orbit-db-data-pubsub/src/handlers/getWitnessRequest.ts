@@ -2,6 +2,8 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 import { TextEncoder } from 'node:util';
 
+import { serializeWitness } from '@zkfs/virtual-storage/dist/mapUtils.js';
+
 import {
   type RequestSchemaType,
   type ResponseSchemaType,
@@ -27,11 +29,9 @@ function createDataObject(
     mapName,
     key
   );
-  const witness = storage.virtualStorage.getSerializedWitness(
-    account,
-    mapName,
-    key
-  );
+  const witness = storage.virtualStorage.getWitness(account, mapName, key);
+
+  const serializedWitness = serializeWitness(witness);
 
   return {
     metadata: {
@@ -39,7 +39,7 @@ function createDataObject(
       value: value ?? [],
     },
 
-    witness,
+    witness: serializedWitness,
   };
 }
 

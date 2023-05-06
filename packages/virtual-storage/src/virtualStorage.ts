@@ -62,7 +62,7 @@ class VirtualStorage {
   public witnesses: { [key: string]: WitnessRecord | undefined } = {};
 
   // eslint-disable-next-line @typescript-eslint/naming-convention
-  public constructor(public config = { useCachedWitnesses: false }) { }
+  public constructor(public config = { useCachedWitnesses: false }) {}
 
   /**
    * Returns stored data for the given address
