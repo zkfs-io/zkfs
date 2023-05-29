@@ -1,4 +1,6 @@
-import { Field, MerkleMap } from 'snarkyjs';
+/* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
+/* eslint-disable new-cap */
+import { Field, MerkleMap, Bool, MerkleMapWitness } from 'snarkyjs';
 
 interface SerializableTree {
   nodes: Record<number, Record<string, Field>>;
@@ -10,7 +12,16 @@ interface SerializedTree {
   zeroes: string[];
 }
 
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+interface SerializeableWitness {
+  siblings: Field[];
+  isLefts: Bool[];
+}
+
+interface SerializedWitness {
+  siblings: string[];
+  isLefts: string[];
+}
+
 function serializeMap(map: MerkleMap): string {
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const tree = map.tree as unknown as SerializableTree;
@@ -50,7 +61,7 @@ function deserializeMap(serializedTree: string): MerkleMap {
   const tree = JSON.parse(serializedTree) as SerializedTree;
   const map = new MerkleMap();
 
-  // eslint-disable-next-line new-cap, putout/putout
+  // eslint-disable-next-line putout/putout
   const zeroes = tree.zeroes.map<Field>((zero) => Field(zero));
   // eslint-disable-next-line putout/putout
   const nodes = Object.entries(tree.nodes).reduce<SerializableTree['nodes']>(
@@ -63,7 +74,7 @@ function deserializeMap(serializedTree: string): MerkleMap {
       nodes[keyNumber] = childNodes.reduce<Record<string, Field>>(
         // eslint-disable-next-line @typescript-eslint/no-shadow
         (nestedValue, [key, value]) => {
-          // eslint-disable-next-line no-param-reassign, new-cap
+          // eslint-disable-next-line no-param-reassign
           nestedValue[key] = Field(value);
           return nestedValue;
         },
@@ -82,4 +93,35 @@ function deserializeMap(serializedTree: string): MerkleMap {
   return map;
 }
 
-export { serializeMap, deserializeMap };
+function serializeWitness(witness: MerkleMapWitness): string {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  const witnessObject = witness as unknown as SerializeableWitness;
+
+  const siblings = witnessObject.siblings.map<string>((sibling) =>
+    sibling.toString()
+  );
+  const isLefts = witnessObject.isLefts.map<string>((isLeft) =>
+    String(isLeft.toBoolean())
+  );
+
+  const serializedWitness: SerializedWitness = {
+    siblings,
+    isLefts,
+  };
+
+  return JSON.stringify(serializedWitness);
+}
+
+function deserializeWitness(serializedWitness: string): MerkleMapWitness {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  const witness = JSON.parse(serializedWitness) as SerializedWitness;
+
+  const siblings = witness.siblings.map<Field>((sibling) => Field(sibling));
+  const isLefts = witness.isLefts.map<Bool>((isLeft) =>
+    Bool(isLeft === 'true')
+  );
+
+  return new MerkleMapWitness(isLefts, siblings);
+}
+
+export { serializeMap, deserializeMap, serializeWitness, deserializeWitness };

@@ -140,6 +140,8 @@ class ConcurrentCounter extends OffchainStateContract {
 
     const currentRootHash = this.root.getRootHash();
 
+    this.resetLastUpdatedOffchainState();
+
     const { actionsHash: newActionsHash, state: newRootHash } =
       this.withRollingState(() =>
         this.reducer.reduce(

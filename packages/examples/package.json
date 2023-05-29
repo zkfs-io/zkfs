@@ -6,18 +6,27 @@
   "type": "module",
   "scripts": {
     "lint": "eslint ./test",
-    "test": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./test",
-    "test:file": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js",
+    "test": "npm run test:clean && node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./test",
+    "test:file": "npm run test:clean && node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js",
     "test:stackblitz": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./test/counter.test.ts --forceExit --config=jest-stackblitz.config.cjs",
     "test:ci": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./test",
-    "test:watch": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./test --watch"
+    "test:watch": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../node_modules/jest/bin/jest.js ./test --watch",
+    "test:clean": "rm -rf ipfs-* orbitdb"
   },
   "main": "dist/index.js",
   "gitHead": "f9ab85515fd9a375db41e7d21cbe55ef023ecac7",
   "dependencies": {
     "@types/lodash": "^4.14.191",
+    "snarkyjs": "^0.8.0",
+    "ipfs-core": "^0.18.0",
     "@zkfs/contract-api": "*",
-    "@zkfs/safe-math": "*"
+    "@zkfs/safe-math": "*",
+    "@zkfs/virtual-storage": "*",
+    "@zkfs/storage-orbit-db": "*",
+    "@zkfs/node": "*",
+    "@zkfs/orbit-db-data-pubsub": "*",
+    "@zkfs/consensus-bridge": "*",
+    "@zkfs/event-parser": "*"
   },
   "devDependencies": {
     "eslint": "^8.33.0",

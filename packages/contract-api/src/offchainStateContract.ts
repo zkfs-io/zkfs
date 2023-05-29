@@ -4,6 +4,7 @@ import { Field, SmartContract, State, state } from 'snarkyjs';
 
 import OffchainStateMapRoot from './offchainStateMapRoot.js';
 import OffchainStateBackup from './offchainStateBackup.js';
+import type OffchainState from './offchainState.js';
 
 interface RollingStateOptions {
   shouldEmitEvents: boolean;
@@ -40,6 +41,32 @@ class OffchainStateContract extends SmartContract {
 
   public set virtualStorage(value) {
     OffchainStateContract.offchainState.backup.virtualStorage = value;
+  }
+
+  public get lastUpdatedOffchainState() {
+    return OffchainStateContract.offchainState.backup.lastUpdatedOffchainState;
+  }
+
+  public set lastUpdatedOffchainState(value) {
+    OffchainStateContract.offchainState.backup.lastUpdatedOffchainState = value;
+  }
+
+  public resetLastUpdatedOffchainState() {
+    this.lastUpdatedOffchainState = undefined;
+  }
+
+  public getLastUpdatedOffchainState(
+    mapName: string
+  ): OffchainState<unknown, unknown> | undefined {
+    return this.lastUpdatedOffchainState?.[mapName];
+  }
+
+  public setLastUpdatedOffchainState(
+    mapName: string,
+    lastUpdatedOffchainState: OffchainState<unknown, unknown>
+  ) {
+    this.lastUpdatedOffchainState ??= {};
+    this.lastUpdatedOffchainState[mapName] = lastUpdatedOffchainState;
   }
 
   public setRollingStateOptions(options: Partial<RollingStateOptions>) {

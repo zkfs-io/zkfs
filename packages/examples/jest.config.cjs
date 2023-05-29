@@ -1,1 +1,1 @@
-module.exports = require('./../../jest.config.cjs');
+module.exports = require('./../../jest.config.cjs')(__dirname);

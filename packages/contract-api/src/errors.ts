@@ -12,6 +12,15 @@ const errors = {
   virtualStorageNotFound: () => new Error('Virtual storage not found'),
   parentMapNotFound: () => new Error('Parent map not found'),
   witnessNotFound: () => new Error('Witness not found'),
+
+  invalidStructOrCircuitValue: () =>
+    new Error('Not a valid Struct or CircuitValue'),
+
+  unsupportedTypeForKey: () =>
+    new Error(`Can't create Key from unsupported value type.`),
+
+  lastUpdatedOffchainStateNotFound: () =>
+    new Error('Last updated offchain state was not found'),
 };
 
 export default errors;

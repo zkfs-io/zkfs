@@ -1,0 +1,24 @@
+{
+  "name": "@zkfs/orbit-db-data-pubsub",
+  "version": "0.0.1",
+  "license": "MIT",
+  "public": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "eslint ./src",
+    "test": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../../node_modules/jest/bin/jest.js ./src",
+    "test:watch": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads ../../../node_modules/jest/bin/jest.js ./src --watch"
+  },
+  "main": "dist/services/orbit-db-data-pubsub/src/index.js",
+  "typings": "dist/services/orbit-db-data-pubsub/src/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@libp2p/interface-pubsub": "^3.0.6",
+    "@sinclair/typebox": "^0.25.24",
+    "@zkfs/virtual-storage": "0.1.1-develop.174"
+  }
+}

@@ -3,9 +3,9 @@
 /* eslint-disable import/no-commonjs */
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 
-module.exports = {
-  // because we run tests from within ./packages/<package_name>/
+module.exports = (packageDir) => ({
   rootDir: './../../',
+  testMatch: [`${packageDir}/(src|test)/**/*.(spec|test).(js|jsx|ts|tsx)`],
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
     '../../../node_modules/snarkyjs/dist/(.*)': '<rootDir>/node_modules/snarkyjs/dist/$1',
@@ -21,4 +21,4 @@ module.exports = {
       },
     ],
   },
-};
+});

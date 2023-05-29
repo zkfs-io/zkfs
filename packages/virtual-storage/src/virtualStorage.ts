@@ -1,15 +1,51 @@
+/* eslint-disable max-lines */
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 import { Poseidon, Field, MerkleMap, type MerkleMapWitness } from 'snarkyjs';
 
-import { serializeMap, deserializeMap } from './mapUtils.js';
+import {
+  serializeMap,
+  deserializeMap,
+  serializeWitness,
+  deserializeWitness,
+} from './mapUtils.js';
 
 type ValueRecord = Record<string, string[] | undefined>;
+
+// serialized witness
+type WitnessRecord = Record<string, string | undefined>;
 
 /**
  * Enables contract-api and nodes to process rolling/virtual storage
  * updates during contract execution or event processing.
  */
 class VirtualStorage {
+  /**
+   * This function computes a root from a serialized witness and
+   * serialized value
+   *
+   * @param {string} serializedWitness - A string representing a serialized
+   * witness object.
+   * @param {string[]} serializedValue - An array of strings representing
+   * the serialized values that will be used to compute the root.
+   *
+   * @returns a string which represents the computed root from the serialized
+   * witness and serialized value.
+   */
+  public static computeRootFromSerializedValueWitness(
+    serializedWitness: string,
+    serializedValue: string[]
+  ): string {
+    const witness = deserializeWitness(serializedWitness);
+
+    const valueFields = serializedValue.map((fieldString) =>
+      // eslint-disable-next-line new-cap
+      Field(fieldString)
+    );
+    const valueHash = Poseidon.hash(valueFields);
+
+    return witness.computeRootAndKey(valueHash)[0].toString();
+  }
+
   // address -> map name -> serialized map as string
   public maps: {
     [key: string]:
@@ -21,6 +57,12 @@ class VirtualStorage {
 
   // address -> { key: value }
   public data: { [key: string]: ValueRecord | undefined } = {};
+
+  // address -> { key: value }
+  public witnesses: { [key: string]: WitnessRecord | undefined } = {};
+
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  public constructor(public config = { useCachedWitnesses: false }) {}
 
   /**
    * Returns stored data for the given address
@@ -132,16 +174,73 @@ class VirtualStorage {
    * @param key
    * @returns MerkleMapWitness
    */
+  // eslint-disable-next-line max-statements
   public getWitness(
     address: string,
     mapName: string,
     key: string
   ): MerkleMapWitness {
-    const map = this.getMap(address, mapName);
+    // eslint-disable-next-line @typescript-eslint/init-declarations
+    let witness: MerkleMapWitness | undefined;
 
-    // tree only stores hashed values, we can retrieve the witness by a key
-    // eslint-disable-next-line new-cap
-    return map.getWitness(Field(key));
+    if (this.config.useCachedWitnesses) {
+      witness = this.getDeserializedCachedWitness(address, mapName, key);
+    }
+
+    if (witness) {
+      return witness;
+    }
+
+    // if no cached witness was found, we need to compute it
+    const map = this.getMap(address, mapName);
+    witness ??= map.getWitness(
+      // eslint-disable-next-line new-cap
+      Field(key)
+    );
+
+    // save computed witness to cache
+    if (this.config.useCachedWitnesses) {
+      const serializedWitness = serializeWitness(witness);
+      this.setSerializedWitness(address, mapName, key, serializedWitness);
+    }
+
+    return witness;
+  }
+
+  /**
+   * This function returns the serialized witnesses for a
+   * given address or an empty object if none exist.
+   *
+   * @param {string} address
+   *
+   * @returns a WitnessRecord object for the given address.
+   */
+  public getSerializedWitnesses(address: string): WitnessRecord {
+    return this.witnesses[address] ?? {};
+  }
+
+  public getSerializedCachedWitness(
+    address: string,
+    mapName: string,
+    key: string
+  ): string | undefined {
+    const witnesses = this.getSerializedWitnesses(address);
+    const combinedKey = this.getCombinedKey(mapName, key);
+    return witnesses[combinedKey];
+  }
+
+  public getDeserializedCachedWitness(
+    address: string,
+    mapName: string,
+    key: string
+  ): MerkleMapWitness | undefined {
+    const serializedWitness: string | undefined =
+      this.getSerializedCachedWitness(address, mapName, key);
+
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    return serializedWitness
+      ? deserializeWitness(serializedWitness)
+      : undefined;
   }
 
   /**
@@ -199,6 +298,18 @@ class VirtualStorage {
   ): void {
     const serializedValue = value.map((field) => field.toString());
     this.setSerializedValue(address, mapName, key, serializedValue);
+  }
+
+  // eslint-disable-next-line max-params
+  public setSerializedWitness(
+    address: string,
+    mapName: string,
+    key: string,
+    serializedWitness: string
+  ): void {
+    const witnesses = this.getSerializedWitnesses(address);
+    const combinedKey = this.getCombinedKey(mapName, key);
+    witnesses[combinedKey] = serializedWitness;
   }
 
   /**

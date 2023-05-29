@@ -35,7 +35,7 @@ class OffchainStateMap {
    */
   public static fromParent(
     parent: OffchainStateMap,
-    mapName: Key<unknown>
+    mapName?: Key<unknown>
   ): OffchainStateMap {
     const map = new OffchainStateMap();
     map.parent = parent;
@@ -172,7 +172,7 @@ class OffchainStateMap {
    * @param mapName - The name of the map you want to create.
    * @returns A map of offchain state
    */
-  public getMap(mapName: Key<unknown>): OffchainStateMap {
+  public getMap(mapName?: Key<unknown>): OffchainStateMap {
     const map = OffchainStateMap.fromParent(this, mapName);
     map.contract = this.contract;
     return map;
