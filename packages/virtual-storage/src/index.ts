@@ -5,3 +5,9 @@ export {
   type MergableMerkleMapWitness,
   mergeMerkleMapWitnesses,
 } from './mergableMerkleMapWitness.js';
+export {
+  serializeWitness,
+  deserializeWitness,
+  serializeMap,
+  deserializeMap,
+} from './mapUtils.js';

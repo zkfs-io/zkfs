@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/prefer-readonly-parameter-types */
 import { TextEncoder } from 'node:util';
 
-import { serializeWitness } from '@zkfs/virtual-storage/dist/mapUtils.js';
+import { serializeWitness } from '@zkfs/virtual-storage';
 
 import {
   type RequestSchemaType,
